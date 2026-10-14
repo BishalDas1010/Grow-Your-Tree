@@ -164,6 +164,7 @@ fun HabitsScreen(
     // "Start Next Session" tapped: gives the habit and the session to start
     onStartSession: (habit: Habit, session: Session) -> Unit = { _, _ -> }
 ) {
+
     // Only screen-level UI state lives here. The data lives in the ViewModel.
     var selectedFilter by rememberSaveable { mutableStateOf<String?>(null) }
     var showSectionDialog by remember { mutableStateOf(false) }
@@ -204,7 +205,15 @@ fun HabitsScreen(
                     if (next != null) onStartSession(openHabit, next)
                 },
                 onDelete = { sessionId -> onDeleteSession(openHabit.id, sessionId) },
+
+
                 onDeleteHabit = {
+                    // Is this the last task in its section?
+                    val wasLast = habits.count { it.category == openHabit.category } == 1
+                    if (wasLast && selectedFilter == openHabit.category) {
+                        selectedFilter = null
+                    }
+
                     onDeleteHabit(openHabit.id)
                     addingSession = false
                     openHabitId = null

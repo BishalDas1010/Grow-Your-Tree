@@ -1,37 +1,13 @@
 package com.example.disipline.UI
 
-
-
 // =====================================================================
 // FOCUS TIMER SCREEN (the screen shown WHILE a session is running)
 //
-//   1. DATA        -> FocusTimerUiState + time formatting helper
-//   2. ICONS       -> one place to change icons / colors
-//   3. MAIN SCREEN -> FocusTimerScreen() - the only function other files call
-//   4. UI PIECES   -> small private composables the screen is built from
-//   5. PREVIEW     -> sample for Android Studio
+// Values shown come from TWO sources:
+//   - `focusSettings`  -> mode, plan, blocked apps (chosen on the Focus screen)
+//   - `state`          -> live countdown (produced by FocusTimerViewModel)
 //
-// HOW IT CONNECTS TO THE PREVIOUS SCREEN:
-//   FocusSessionScreen gives you a FocusSettings (minutes, task, sound...).
-//   Your ViewModel turns that into a FocusTimerUiState:
-//       totalSeconds     = settings.minutes * 60
-//       remainingSeconds = totalSeconds            (then counts down)
-//       taskName         = settings.task
-//       whiteNoiseOn     = settings.ambientSound
-//
-// HOW TO LINK IT TO YOUR APP (example, in your NavHost):
-//
-//   FocusTimerScreen(
-//       state = viewModel.timerState.collectAsState().value,
-//       onBack = { navController.popBackStack() },
-//       onPauseResume = { viewModel.togglePause() },
-//       onEnd = { viewModel.endSession(); navController.popBackStack() },
-//       onWhiteNoiseToggle = { viewModel.toggleWhiteNoise() }
-//   )
-//
-// IMPORTANT: this file does NOT count time. The countdown (a coroutine or
-// a foreground service) lives in your ViewModel / service and updates
-// remainingSeconds every second. The screen just redraws whatever it gets.
+// ForestGrowthView() lives in ForestGrowthView.kt in the same package.
 // =====================================================================
 
 import androidx.compose.foundation.Canvas
@@ -43,12 +19,14 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
@@ -65,7 +43,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -81,58 +62,57 @@ import com.example.disipline.ui.theme.TextSecondary
 // 1. DATA
 // =====================================================================
 
-// Everything the timer screen needs. Time is in SECONDS.
 data class FocusTimerUiState(
-    val taskName: String,           // "Study DSA" (shown under the title)
-    val totalSeconds: Int,          // full length, e.g. 25 * 60
-    val remainingSeconds: Int,      // counts down from totalSeconds to 0
-    val isRunning: Boolean,         // true = running (shows Pause), false = paused (shows Resume)
-    val whiteNoiseOn: Boolean       // white noise currently playing
+    val taskName: String,
+    val totalSeconds: Int,
+    val remainingSeconds: Int,
+    val isRunning: Boolean,
+    val whiteNoiseOn: Boolean
 )
 
-// 1472 -> "24:32"
 private fun formatTime(totalSeconds: Int): String {
-    val minutes = totalSeconds / 60
-    val seconds = totalSeconds % 60
+    val safe = totalSeconds.coerceAtLeast(0)
+    val minutes = safe / 60
+    val seconds = safe % 60
     return "%02d:%02d".format(minutes, seconds)
 }
 
 // =====================================================================
 // 2. ICONS / COLORS
-// Placeholder icon. To use a real one: right click res/drawable ->
-// New -> Vector Asset, then change the line below.
-// The tree, speaker, pause bars and stop square are drawn with emoji /
-// shapes, so they need no drawables. To use a real tree picture later,
-// replace the Text("🌳") inside FocusTimerScreen with an Image(...).
 // =====================================================================
 
 private val ICON_BACK = R.drawable.ic_launcher_foreground
-
-// Red used by the End button
 private val EndRed = Color(0xFFE5484D)
+private val TOP_BAR_ICON_SLOT = 48.dp
 
 // =====================================================================
-// 3. MAIN SCREEN - call this from your navigation
+// 3. MAIN SCREEN
 // =====================================================================
 
 @Composable
 fun FocusTimerScreen(
-    state: FocusTimerUiState,                  // data to show (from ViewModel)
-    onBack: () -> Unit = {},                   // back arrow tapped
-    onPauseResume: () -> Unit = {},            // center button tapped
-    onEnd: () -> Unit = {},                    // red End button tapped
-    onWhiteNoiseToggle: () -> Unit = {}        // white noise button tapped
+    // Settings chosen on the previous screen (mode, plan, blocked apps).
+    // Null when the screen is opened directly without going through Focus.
+    focusSettings: FocusSettings? = null,
+    // Live countdown state produced by FocusTimerViewModel.
+    state: FocusTimerUiState,
+    onBack: () -> Unit = {},
+    onPauseResume: () -> Unit = {},
+    onEnd: () -> Unit = {},
+    onWhiteNoiseToggle: () -> Unit = {}
 ) {
-    // Share of time LEFT (1.0 = full ring, 0.0 = empty ring).
-    // coerceIn keeps it safe if the value ever goes out of range.
-    // To make the ring FILL UP instead, use 1f - this value.
     val progress = if (state.totalSeconds > 0) {
         (state.remainingSeconds.toFloat() / state.totalSeconds).coerceIn(0f, 1f)
     } else {
         0f
     }
 
-    Scaffold(containerColor = BgDark) { padding ->
+    val growthProgress = (1f - progress).coerceIn(0f, 1f)
+
+    Scaffold(
+        containerColor = BgDark,
+        contentWindowInsets = WindowInsets(0, 0, 0, 0)
+    ) { padding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -140,32 +120,32 @@ fun FocusTimerScreen(
                 .padding(horizontal = 24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Back arrow + "Focus Session" + task name
             TimerTopBar(taskName = state.taskName, onBack = onBack)
 
-            // weight(1f) spacers share the free space, which centers the ring + time
             Spacer(Modifier.weight(1f))
 
-            // The ring with the tree inside
             TimerRing(
                 progress = progress,
                 modifier = Modifier.fillMaxWidth(0.85f)
             ) {
-                // Dark circle behind the tree
                 Box(
                     modifier = Modifier
                         .fillMaxSize(0.82f)
                         .clip(CircleShape)
-                        .background(IconCircle),
+                        .background(IconCircle)
+                        .semantics { contentDescription = "Growing tree" },
                     contentAlignment = Alignment.Center
                 ) {
-                    Text(text = "🌳", fontSize = 110.sp)
+                    ForestGrowthView(
+                        progress = growthProgress,
+                        modifier = Modifier.fillMaxSize()
+                    )
                 }
             }
 
             Spacer(Modifier.height(20.dp))
 
-            // Big remaining time and the total under it
+            // Big time
             Text(
                 text = formatTime(state.remainingSeconds),
                 color = TextPrimary,
@@ -178,9 +158,53 @@ fun FocusTimerScreen(
                 fontSize = 18.sp
             )
 
+            // ---- Details pulled from the Focus screen ----
+            if (focusSettings != null) {
+                Spacer(Modifier.height(16.dp))
+
+                // Mode chip (Focus / Short Break / Long Break)
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(50))
+                        .background(Surface)
+                        .padding(horizontal = 14.dp, vertical = 6.dp)
+                ) {
+                    Text(
+                        text = focusSettings.mode.label,
+                        color = Accent,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+
+                // Plan: "Focus 7m  →  Break 5m  →  Focus 7m"
+                if (focusSettings.plan.isNotEmpty()) {
+                    Spacer(Modifier.height(10.dp))
+                    Text(
+                        text = focusSettings.plan.joinToString("  →  ") {
+                            val tag = if (it.type == SegmentType.Focus) "Focus" else "Break"
+                            "$tag ${it.minutes}m"
+                        },
+                        color = TextSecondary,
+                        fontSize = 12.sp,
+                        textAlign = TextAlign.Center
+                    )
+                }
+
+                // Blocked apps
+                if (focusSettings.blockedApps.isNotEmpty()) {
+                    Spacer(Modifier.height(6.dp))
+                    Text(
+                        text = "Blocked: ${focusSettings.blockedApps.joinToString(", ")}",
+                        color = TextSecondary,
+                        fontSize = 11.sp,
+                        textAlign = TextAlign.Center
+                    )
+                }
+            }
+
             Spacer(Modifier.weight(1f))
 
-            // White Noise | Pause | End
             ControlsRow(
                 isRunning = state.isRunning,
                 whiteNoiseOn = state.whiteNoiseOn,
@@ -198,17 +222,17 @@ fun FocusTimerScreen(
 // 4. UI PIECES
 // =====================================================================
 
-// ---- Top: [back]   Focus Session / Study DSA ----
 @Composable
 private fun TimerTopBar(taskName: String, onBack: () -> Unit) {
-    Box(
+    Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 12.dp)
+            .padding(vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
         IconButton(
             onClick = onBack,
-            modifier = Modifier.align(Alignment.CenterStart)
+            modifier = Modifier.size(TOP_BAR_ICON_SLOT)
         ) {
             Icon(
                 painter = painterResource(ICON_BACK),
@@ -217,9 +241,8 @@ private fun TimerTopBar(taskName: String, onBack: () -> Unit) {
             )
         }
 
-        // Two lines of text centered in the bar
         Column(
-            modifier = Modifier.align(Alignment.Center),
+            modifier = Modifier.weight(1f),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
@@ -228,33 +251,37 @@ private fun TimerTopBar(taskName: String, onBack: () -> Unit) {
                 fontSize = 18.sp,
                 fontWeight = FontWeight.Bold
             )
-            Text(text = taskName, color = TextSecondary, fontSize = 14.sp)
+            Text(
+                text = taskName,
+                color = TextSecondary,
+                fontSize = 14.sp,
+                maxLines = 1
+            )
         }
+
+        Spacer(Modifier.width(TOP_BAR_ICON_SLOT))
     }
 }
 
-// ---- Circular progress ring. Anything passed as content() is drawn in the middle. ----
 @Composable
 private fun TimerRing(
-    progress: Float,                       // 0f..1f, share of the ring that is green
+    progress: Float,
     modifier: Modifier = Modifier,
     content: @Composable () -> Unit
 ) {
     Box(
-        modifier = modifier.aspectRatio(1f),   // keeps the ring a perfect square/circle
+        modifier = modifier.aspectRatio(1f),
         contentAlignment = Alignment.Center
     ) {
-        // Canvas = free drawing area. We draw two arcs on top of each other.
         Canvas(modifier = Modifier.fillMaxSize()) {
             val strokeWidth = 14.dp.toPx()
-            val inset = strokeWidth / 2                       // keeps the stroke inside the canvas
+            val inset = strokeWidth / 2
             val topLeft = Offset(inset, inset)
             val arcSize = Size(size.width - strokeWidth, size.height - strokeWidth)
 
-            // 1) Dark full circle = the empty track
             drawArc(
                 color = IconCircle,
-                startAngle = -90f,                            // -90 = start at the top
+                startAngle = -90f,
                 sweepAngle = 360f,
                 useCenter = false,
                 topLeft = topLeft,
@@ -262,23 +289,27 @@ private fun TimerRing(
                 style = Stroke(width = strokeWidth)
             )
 
-            // 2) Green arc on top = the progress
-            drawArc(
-                color = Accent,
-                startAngle = -90f,
-                sweepAngle = 360f * progress,                 // how far around the circle
-                useCenter = false,
-                topLeft = topLeft,
-                size = arcSize,
-                style = Stroke(width = strokeWidth, cap = StrokeCap.Round)
-            )
+            if (progress > 0f) {
+                val fullSweep = progress >= 1f
+                drawArc(
+                    color = Accent,
+                    startAngle = -90f,
+                    sweepAngle = if (fullSweep) 360f else 360f * progress,
+                    useCenter = false,
+                    topLeft = topLeft,
+                    size = arcSize,
+                    style = Stroke(
+                        width = strokeWidth,
+                        cap = if (fullSweep) StrokeCap.Butt else StrokeCap.Round
+                    )
+                )
+            }
         }
 
         content()
     }
 }
 
-// ---- Bottom controls: White Noise | Pause | End ----
 @Composable
 private fun ControlsRow(
     isRunning: Boolean,
@@ -287,8 +318,6 @@ private fun ControlsRow(
     onEnd: () -> Unit,
     onWhiteNoiseToggle: () -> Unit
 ) {
-    // Top-aligned so all three labels line up even though the buttons differ in size.
-    // Each column gets weight(1f), so the three controls are spread evenly.
     Row(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.Top
@@ -304,12 +333,15 @@ private fun ControlsRow(
                     .size(56.dp)
                     .clip(CircleShape)
                     .background(Surface)
-                    // green ring only while white noise is on
                     .then(
                         if (whiteNoiseOn) Modifier.border(2.dp, Accent, CircleShape)
                         else Modifier
                     )
-                    .clickable(onClick = onWhiteNoiseToggle),
+                    .clickable(onClick = onWhiteNoiseToggle)
+                    .semantics {
+                        contentDescription =
+                            if (whiteNoiseOn) "White noise on" else "White noise off"
+                    },
                 contentAlignment = Alignment.Center
             ) {
                 Text(text = "🔊", fontSize = 22.sp)
@@ -328,11 +360,14 @@ private fun ControlsRow(
                     .clip(CircleShape)
                     .background(Surface)
                     .border(2.dp, Accent, CircleShape)
-                    .clickable(onClick = onPauseResume),
+                    .clickable(onClick = onPauseResume)
+                    .semantics {
+                        contentDescription =
+                            if (isRunning) "Pause timer" else "Resume timer"
+                    },
                 contentAlignment = Alignment.Center
             ) {
                 if (isRunning) {
-                    // Pause icon = two small vertical bars
                     Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                         Box(
                             modifier = Modifier
@@ -348,7 +383,6 @@ private fun ControlsRow(
                         )
                     }
                 } else {
-                    // Resume icon = play triangle
                     Text(text = "▶", color = TextPrimary, fontSize = 26.sp)
                 }
             }
@@ -365,10 +399,10 @@ private fun ControlsRow(
                     .size(56.dp)
                     .clip(RoundedCornerShape(16.dp))
                     .background(EndRed)
-                    .clickable(onClick = onEnd),
+                    .clickable(onClick = onEnd)
+                    .semantics { contentDescription = "End session" },
                 contentAlignment = Alignment.Center
             ) {
-                // Stop icon = small white rounded square
                 Box(
                     modifier = Modifier
                         .size(16.dp)
@@ -380,47 +414,92 @@ private fun ControlsRow(
     }
 }
 
-// ---- One control = fixed-height slot for the button + a label under it ----
 @Composable
 private fun ControlColumn(
     label: String,
     labelColor: Color,
-    modifier: Modifier = Modifier,       // parent passes weight(1f) here
+    modifier: Modifier = Modifier,
     button: @Composable () -> Unit
 ) {
     Column(
         modifier = modifier,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // Every slot is 72dp tall and centers its button, so smaller buttons
-        // sit on the same line as the big Pause button
         Box(
             modifier = Modifier.height(72.dp),
             contentAlignment = Alignment.Center
         ) {
             button()
         }
-
         Spacer(Modifier.height(8.dp))
-
-        Text(text = label, color = labelColor, fontSize = 12.sp)
+        Text(
+            text = label,
+            color = labelColor,
+            fontSize = 12.sp,
+            maxLines = 1
+        )
     }
 }
 
 // =====================================================================
-// 5. PREVIEW - delete when you wire in the real ViewModel.
+// 5. PREVIEWS
 // =====================================================================
 
-@Preview(showBackground = true, backgroundColor = 0xFF08140F, widthDp = 390, heightDp = 800)
+@Preview(
+    showBackground = true,
+    backgroundColor = 0xFF0E0E10,
+    widthDp = 390,
+    heightDp = 800
+)
 @Composable
 private fun FocusTimerScreenPreview() {
+    // Sample settings — same shape FocusSessionScreen would produce.
+    val sampleSettings = FocusSettings(
+        mode = FocusMode.ShortBreak,
+        minutes = 25,
+        task = "Study DSA",
+        ambientSound = true,
+        blockApps = true,
+        blockedApps = listOf("YouTube", "Instagram", "TikTok")
+    )
+
     FocusTimerScreen(
+        focusSettings = sampleSettings,
         state = FocusTimerUiState(
-            taskName = "Study DSA",
-            totalSeconds = 25 * 60,
-            remainingSeconds = 24 * 60 + 32,   // shows 24:32
+            taskName = sampleSettings.task,
+            totalSeconds = sampleSettings.minutes * 60,
+            remainingSeconds = 12 * 60 + 30,
             isRunning = true,
             whiteNoiseOn = false
+        )
+    )
+}
+
+@Preview(
+    showBackground = true,
+    backgroundColor = 0xFF0E0E10,
+    widthDp = 390,
+    heightDp = 800
+)
+@Composable
+private fun FocusTimerScreenPausedPreview() {
+    val sampleSettings = FocusSettings(
+        mode = FocusMode.Focus,
+        minutes = 25,
+        task = "Read 20 pages",
+        ambientSound = false,
+        blockApps = false,
+        blockedApps = emptyList()
+    )
+
+    FocusTimerScreen(
+        focusSettings = sampleSettings,
+        state = FocusTimerUiState(
+            taskName = sampleSettings.task,
+            totalSeconds = sampleSettings.minutes * 60,
+            remainingSeconds = 60,
+            isRunning = false,
+            whiteNoiseOn = true
         )
     )
 }

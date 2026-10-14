@@ -133,7 +133,22 @@ class HabitsViewModel : ViewModel() {
     fun addHabit(title: String, emoji: String, category: String, target: Int) =
         HabitRepository.addHabit(title, emoji, category, target)
 
-    fun deleteHabit(habitId: Int) = HabitRepository.deleteHabit(habitId)
+    fun deleteHabit(habitId: Int) {
+        // Remember the section before the habit is gone
+        val category = habits.value.firstOrNull { it.id == habitId }?.category
+
+        HabitRepository.deleteHabit(habitId)
+
+        // If no habit uses this section anymore, remove the section too
+        if (category != null) {
+            val stillUsed = habits.value.any { it.category.equals(category, ignoreCase = true) }
+            if (!stillUsed) {
+                _sections.update { current ->
+                    current.filterNot { it.equals(category, ignoreCase = true) }
+                }
+            }
+        }
+    }
 
     fun addSession(
         habitId: Int,

@@ -61,11 +61,12 @@ import com.example.disipline.ui.theme.OnAccent
 import com.example.disipline.ui.theme.Outline
 import com.example.disipline.ui.theme.TextPrimary
 import com.example.disipline.ui.theme.TextSecondary
-
+import com.example.disipline.data.reposotry.HabitRepository
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        HabitRepository.init(applicationContext)   // opens the offline database
         enableEdgeToEdge()
         setContent {
             DisiplineTheme {
