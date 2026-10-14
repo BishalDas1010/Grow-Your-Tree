@@ -67,7 +67,8 @@ data class FocusTimerUiState(
     val totalSeconds: Int,
     val remainingSeconds: Int,
     val isRunning: Boolean,
-    val whiteNoiseOn: Boolean
+    val whiteNoiseOn: Boolean,
+    val completed: Boolean = false
 )
 
 private fun formatTime(totalSeconds: Int): String {
@@ -77,9 +78,6 @@ private fun formatTime(totalSeconds: Int): String {
     return "%02d:%02d".format(minutes, seconds)
 }
 
-// =====================================================================
-// 2. ICONS / COLORS
-// =====================================================================
 
 private val ICON_BACK = R.drawable.ic_launcher_foreground
 private val EndRed = Color(0xFFE5484D)
@@ -99,7 +97,8 @@ fun FocusTimerScreen(
     onBack: () -> Unit = {},
     onPauseResume: () -> Unit = {},
     onEnd: () -> Unit = {},
-    onWhiteNoiseToggle: () -> Unit = {}
+    onWhiteNoiseToggle: () -> Unit = {},
+
 ) {
     val progress = if (state.totalSeconds > 0) {
         (state.remainingSeconds.toFloat() / state.totalSeconds).coerceIn(0f, 1f)
@@ -439,67 +438,4 @@ private fun ControlColumn(
             maxLines = 1
         )
     }
-}
-
-// =====================================================================
-// 5. PREVIEWS
-// =====================================================================
-
-@Preview(
-    showBackground = true,
-    backgroundColor = 0xFF0E0E10,
-    widthDp = 390,
-    heightDp = 800
-)
-@Composable
-private fun FocusTimerScreenPreview() {
-    // Sample settings — same shape FocusSessionScreen would produce.
-    val sampleSettings = FocusSettings(
-        mode = FocusMode.ShortBreak,
-        minutes = 25,
-        task = "Study DSA",
-        ambientSound = true,
-        blockApps = true,
-        blockedApps = listOf("YouTube", "Instagram", "TikTok")
-    )
-
-    FocusTimerScreen(
-        focusSettings = sampleSettings,
-        state = FocusTimerUiState(
-            taskName = sampleSettings.task,
-            totalSeconds = sampleSettings.minutes * 60,
-            remainingSeconds = 12 * 60 + 30,
-            isRunning = true,
-            whiteNoiseOn = false
-        )
-    )
-}
-
-@Preview(
-    showBackground = true,
-    backgroundColor = 0xFF0E0E10,
-    widthDp = 390,
-    heightDp = 800
-)
-@Composable
-private fun FocusTimerScreenPausedPreview() {
-    val sampleSettings = FocusSettings(
-        mode = FocusMode.Focus,
-        minutes = 25,
-        task = "Read 20 pages",
-        ambientSound = false,
-        blockApps = false,
-        blockedApps = emptyList()
-    )
-
-    FocusTimerScreen(
-        focusSettings = sampleSettings,
-        state = FocusTimerUiState(
-            taskName = sampleSettings.task,
-            totalSeconds = sampleSettings.minutes * 60,
-            remainingSeconds = 60,
-            isRunning = false,
-            whiteNoiseOn = true
-        )
-    )
 }

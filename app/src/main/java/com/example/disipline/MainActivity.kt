@@ -63,15 +63,32 @@ import com.example.disipline.ui.theme.TextPrimary
 import com.example.disipline.ui.theme.TextSecondary
 import com.example.disipline.data.reposotry.HabitRepository
 
+
+
+import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
+import androidx.core.view.WindowCompat
+import com.example.disipline.data.reposotry.ProfileRepository
+
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        HabitRepository.init(applicationContext)   // opens the offline database
+        ProfileRepository.init(applicationContext)
+
+        HabitRepository.init(applicationContext)
         enableEdgeToEdge()
+
+        // Force LIGHT (white) status bar icons, regardless of system theme.
+        // false = light icons (white). true = dark icons (black).
+        WindowCompat.getInsetsController(window, window.decorView)
+            .isAppearanceLightStatusBars = false
+
+        // Same for the bottom nav bar icons.
+        WindowCompat.getInsetsController(window, window.decorView)
+            .isAppearanceLightNavigationBars = false
+
         setContent {
-            DisiplineTheme {
-                AppNavigation()
-            }
+            AppNavigation()
         }
     }
 }

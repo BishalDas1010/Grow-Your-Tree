@@ -51,11 +51,11 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.disipline.HabitsViewModel
 import com.example.disipline.R
 import com.example.disipline.UI.Habits.HabitDetailScreen
 import com.example.disipline.UI.Habits.addSession.AddSessionScreen
 import com.example.disipline.UI.Habits.sampleHabits
-import com.example.disipline.Viewmodel.HabitsViewModel
 import com.example.disipline.data.Session
 import com.example.disipline.ui.theme.Accent
 import com.example.disipline.ui.theme.BgDark
@@ -198,22 +198,25 @@ fun HabitsScreen(
                 habit = openHabit,
                 onBack = { openHabitId = null },
                 onAddSession = { addingSession = true },
-                onToggleSession = { sessionId -> onToggleSession(openHabit.id, sessionId) },
+
+                // Tapping a session opens its Focus/timer screen. No toggling here.
+                onOpenSession = { sessionId ->
+                    val session = openHabit.sessions.firstOrNull { it.id == sessionId }
+                    if (session != null && !session.isDone) {
+                        onStartSession(openHabit, session)
+                    }
+                },
+
                 onStartNext = {
-                    // Opens the Focus screen with the first session that is not done yet
                     val next = openHabit.sessions.firstOrNull { !it.isDone }
                     if (next != null) onStartSession(openHabit, next)
                 },
                 onDelete = { sessionId -> onDeleteSession(openHabit.id, sessionId) },
-
-
                 onDeleteHabit = {
-                    // Is this the last task in its section?
                     val wasLast = habits.count { it.category == openHabit.category } == 1
                     if (wasLast && selectedFilter == openHabit.category) {
                         selectedFilter = null
                     }
-
                     onDeleteHabit(openHabit.id)
                     addingSession = false
                     openHabitId = null
@@ -731,20 +734,20 @@ fun HabitsScreenPreview() {
         customSections = listOf("Study")
     )
 }
-
-@Preview(showBackground = true, backgroundColor = 0xFF08140F, widthDp = 390, heightDp = 800)
-@Composable
-private fun HabitDetailPreview() {
-    HabitDetailScreen(
-        habit = sampleHabits.first(),
-        onBack = {},
-        onAddSession = {},
-        onToggleSession = {},
-        onStartNext = {},
-        onDelete = {},
-        onDeleteHabit = {}
-    )
-}
+//
+//@Preview(showBackground = true, backgroundColor = 0xFF08140F, widthDp = 390, heightDp = 800)
+//@Composable
+//private fun HabitDetailPreview() {
+//    HabitDetailScreen(
+//        habit = sampleHabits.first(),
+//        onBack = {},
+//        onAddSession = {},
+//        onToggleSession = {},
+//        onStartNext = {},
+//        onDelete = {},
+//        onDeleteHabit = {}
+//    )
+//}
 
 @Preview(showBackground = true, backgroundColor = 0xFF08140F, widthDp = 390, heightDp = 800)
 @Composable

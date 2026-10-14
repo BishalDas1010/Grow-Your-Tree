@@ -237,8 +237,7 @@ fun HabitDetailScreen(
     habit: Habit,
     onBack: () -> Unit,
     onAddSession: () -> Unit,
-    onToggleSession: (Int) -> Unit,
-    //this used to navigate to the time session
+    onOpenSession: (Int) -> Unit,   // NEW: replaces onToggleSession
     onStartNext: () -> Unit,
     onDelete: (Int) -> Unit,
     onDeleteHabit: () -> Unit
@@ -385,7 +384,8 @@ fun HabitDetailScreen(
                     items(habit.sessions, key = { it.id }) { session ->
                         SessionRow(
                             session = session,
-                            onClick = { onToggleSession(session.id) },
+                            // Completed sessions can't be reopened or un-checked
+                            onClick = { if (!session.isDone) onOpenSession(session.id) },
                             onDelete = { onDelete(session.id) }
                         )
                     }
@@ -413,17 +413,15 @@ fun HabitDetailScreen(
         }
     }
 }
-
-@Preview(showBackground = true, backgroundColor = 0xFF08140F, widthDp = 390, heightDp = 800)
-@Composable
-private fun HabitDetailPreview() {
-    HabitDetailScreen(
-        habit = sampleHabits.first(),
-        onBack = {},
-        onAddSession = {},
-        onToggleSession = {},
-        onStartNext = {},
-        onDelete = {},
-        onDeleteHabit = {}
-    )
-}
+//
+//@Preview(showBackground = true, backgroundColor = 0xFF08140F, widthDp = 390, heightDp = 800)
+//@Composable
+//private fun HabitDetailPreview() {
+//    HabitDetailScreen(
+//        habit = sampleHabits.first(),
+//        onBack = {},
+//        onAddSession = {},
+//        onStartNext = {},
+//        onDeleteHabit = {},
+//    )
+//}
