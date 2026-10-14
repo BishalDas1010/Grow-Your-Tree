@@ -39,7 +39,7 @@ class HomeViewModel : ViewModel() {
             focusTime = formatDuration(doneMinutes),
             treesGrown = doneSessions.size,   // one tree per completed session
             // One goal per habit; done when the habit reached its daily target
-            goals = habits.map { Goal(id = it.id, title = it.title, done = it.isDone) }
+            goals = habits.map { Goal(id = it.id, title = it.title, subText = it.subtitle, done = it.isDone) }
         )
     }
 

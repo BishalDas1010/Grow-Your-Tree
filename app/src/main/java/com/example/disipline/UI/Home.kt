@@ -1,6 +1,7 @@
 package com.example.disipline.UI
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -22,9 +23,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -32,12 +30,16 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.disipline.R
+import com.example.disipline.TreeDesign
 import com.example.disipline.data.HomeUiState
 import com.example.disipline.ui.theme.Accent
 import com.example.disipline.ui.theme.BgDark
@@ -49,16 +51,13 @@ import com.example.disipline.ui.theme.TextPrimary
 import com.example.disipline.ui.theme.TextSecondary
 import java.util.Calendar
 
-
 // One line in "Today's Goals".
 data class Goal(
     val id: Int,
     val title: String,
-    val done: Boolean       // true = filled green checkbox
+    val subText: String,
+    val done: Boolean
 )
-
-
-
 
 // Picks "Good Morning / Afternoon / Evening" from the phone's clock.
 private fun greetingForNow(): String {
@@ -70,40 +69,25 @@ private fun greetingForNow(): String {
     }
 }
 
-
 private val ICON_BELL = R.drawable.ic_launcher_foreground
 private val ICON_ARROW = R.drawable.ic_launcher_foreground
 private val ICON_CHECK = R.drawable.ic_launcher_foreground
+private val ICON_PLAY = R.drawable.ic_launcher_foreground
 
-// Red dot on the bell (notification badge)
 private val BadgeRed = Color(0xFFE5484D)
-
-private data class HomeNavItem(val label: String, val iconRes: Int)
-
-// The label is the value sent to onNavSelected.
-private val homeNavItems = listOf(
-    HomeNavItem("Home", R.drawable.ic_launcher_foreground),
-    HomeNavItem("Focus", R.drawable.ic_launcher_foreground),
-    HomeNavItem("Habits", R.drawable.ic_launcher_foreground),
-    HomeNavItem("Stats", R.drawable.ic_launcher_foreground),
-    HomeNavItem("Profile", R.drawable.ic_launcher_foreground)
-)
 
 @Composable
 fun HomeScreen(
-    state: HomeUiState,                          // data to show
-    selectedNav: String = "Home",                // highlighted bottom tab
-    onNotificationClick: () -> Unit = {},        // bell tapped
-    onStartFocusClick: () -> Unit = {},          // big green button tapped
-    onGoalClick: (Goal) -> Unit = {},            // a goal row tapped
-    onNavSelected: (String) -> Unit = {}         // bottom tab tapped
+    state: HomeUiState,
+    selectedNav: String = "Home",
+    onNotificationClick: () -> Unit = {},
+    onStartFocusClick: () -> Unit = {},
+    onGoalClick: (Goal) -> Unit = {},
+    onNavSelected: (String) -> Unit = {}
 ) {
-    // Scaffold = content area + bottom bar
     Scaffold(
-        containerColor = BgDark,
-
+        containerColor = BgDark
     ) { padding ->
-
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
@@ -111,12 +95,11 @@ fun HomeScreen(
             contentPadding = PaddingValues(horizontal = 20.dp, vertical = 16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Greeting + bell
+            // Header with buttons
             item {
                 HomeHeader(
                     greeting = greetingForNow(),
                     userName = state.userName,
-                    messgae = "keep growing",
                     onNotificationClick = onNotificationClick
                 )
             }
@@ -136,7 +119,7 @@ fun HomeScreen(
             // Big green button
             item { StartFocusButton(onClick = onStartFocusClick) }
 
-            // "Today's Goals" title with the "2/4" counter
+            // "Today's Goals" title
             item {
                 GoalsHeader(
                     done = state.goals.count { it.done },
@@ -148,118 +131,134 @@ fun HomeScreen(
             items(state.goals, key = { it.id }) { goal ->
                 GoalRow(goal = goal, onClick = { onGoalClick(goal) })
             }
+
+            // Quick Actions Section
+            item {
+                Text(
+                    text = "Quick Actions",
+                    color = TextPrimary,
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(top = 8.dp)
+                )
+            }
+            item {
+                QuickActionsRow()
+            }
+
+
         }
     }
 }
 
 // =====================================================================
-// 4. UI PIECES
+// UI PIECES
 // =====================================================================
 
-// ---- Top: "Good Morning / Alex 👋" on the left, bell on the right ----
 @Composable
 private fun HomeHeader(
     greeting: String,
     userName: String,
-    messgae: String?,
     onNotificationClick: () -> Unit
 ) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Column(modifier = Modifier.weight(1f)) {
-            Text(text = greeting, color = TextSecondary, fontSize = 14.sp)
-            Text(
-                text = "$userName 👋",
-                color = TextPrimary,
-                fontSize = 22.sp,
-                fontWeight = FontWeight.Bold
-            )
-            Text(
-                text = "$messgae ",
-                color = TextPrimary,
-                fontSize = 10.sp,
-                fontWeight = FontWeight.Bold
-            )
-        }
+    Column(modifier = Modifier.fillMaxWidth()) {
+        // Top Row: ✕, ⋮, ⬇, Share
 
-        // Box stacks the red dot on top of the bell
-        Box {
-            IconButton(onClick = onNotificationClick) {
-                Icon(
-                    painter = painterResource(ICON_BELL),
-                    contentDescription = "Notifications",
-                    tint = TextPrimary
+
+        Spacer(Modifier.height(8.dp))
+
+        // Greeting Row
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(text = greeting, color = TextSecondary, fontSize = 14.sp)
+                Text(
+                    text = "$userName 👋",
+                    color = TextPrimary,
+                    fontSize = 22.sp,
+                    fontWeight = FontWeight.Bold
                 )
             }
-            Box(
-                modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .padding(top = 10.dp, end = 10.dp)
-                    .size(8.dp)
-                    .clip(CircleShape)
-                    .background(BadgeRed)
-            )
         }
+
+        Spacer(Modifier.height(4.dp))
+
+        // Subtext
+        Text(
+            text = "Keep going, you're doing great!",
+            color = TextSecondary,
+            fontSize = 12.sp
+        )
     }
 }
 
-// ---- Quote card: text on the left, plant badge on the right ----
+
 @Composable
 private fun QuoteCard(quote: String) {
-    Row(
+    // 1. Use a Box as the root so we can stack the text and the tree
+    Box(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(20.dp))
             .background(Surface)
-            .padding(16.dp),
-        verticalAlignment = Alignment.CenterVertically
     ) {
-        // weight(1f) = text takes all leftover width, badge stays on the right
-        Text(
-            text = quote,
-            color = TextPrimary,
-            fontSize = 18.sp,
-            lineHeight = 30.sp,
-            modifier = Modifier.weight(1.5f)
+        // 2. Place the tree first so it sits behind the text (or in front if you prefer)
+        // Align it to the BottomEnd (bottom right corner)
+        TreeDesign(
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .size(width = 130.dp, height = 90.dp)
+            // You can adjust the size above to make it bigger or smaller
         )
 
-        Spacer(Modifier.width(12.dp))
-
-        Box(
+        // 3. The text column sits on top of the tree
+        Column(
             modifier = Modifier
-                .size(56.dp)
-                .clip(RoundedCornerShape(16.dp))
-                .background(IconCircle),
-            contentAlignment = Alignment.Center
+                .padding(16.dp)
+                // 4. Limit the text width to 75% so it doesn't overlap the tree
+                .fillMaxWidth(0.75f)
         ) {
-            Text(text = "🌱", fontSize = 28.sp)
+            // "DAILY MOTIVATION" label
+            Text(
+                text = "DAILY MOTIVATION",
+                color = Accent,
+                fontSize = 10.sp,
+                fontWeight = FontWeight.Bold,
+                letterSpacing = 1.sp
+            )
+
+            Spacer(Modifier.height(8.dp))
+
+            Text(
+                text = quote,
+                color = TextPrimary,
+                fontSize = 18.sp,
+                lineHeight = 26.sp
+            )
+
+            Spacer(Modifier.height(12.dp))
+
+
         }
     }
 }
-
-// ---- Row of three equal stat cards ----
 @Composable
 private fun StatsRow(focusSessions: Int, focusTime: String, treesGrown: Int) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        // weight(1f) inside StatCard makes all three the same width
         StatCard(emoji = "⏱️", value = "$focusSessions", label = "Focus Sessions", modifier = Modifier.weight(1f))
         StatCard(emoji = "📊", value = focusTime, label = "Focus Time", modifier = Modifier.weight(1f))
         StatCard(emoji = "🌱", value = "$treesGrown", label = "Trees Grown", modifier = Modifier.weight(1f))
     }
 }
 
-// ---- One stat card: icon, big number, small label ----
 @Composable
 private fun StatCard(
     emoji: String,
     value: String,
     label: String,
-    modifier: Modifier = Modifier        // the parent passes weight(1f) through here
+    modifier: Modifier = Modifier
 ) {
     Column(
         modifier = modifier
@@ -290,16 +289,15 @@ private fun StatCard(
     }
 }
 
-// ---- Big green "Start Focus Session  →" button ----
 @Composable
 private fun StartFocusButton(onClick: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .height(56.dp)
-            .clip(RoundedCornerShape(50))           // pill shape
+            .clip(RoundedCornerShape(50))
             .background(Accent)
-            .clickable(onClick = onClick),          // after clip so the ripple stays rounded
+            .clickable(onClick = onClick),
         horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -310,16 +308,11 @@ private fun StartFocusButton(onClick: () -> Unit) {
             fontWeight = FontWeight.Bold
         )
         Spacer(Modifier.width(8.dp))
-        Icon(
-            painter = painterResource(ICON_ARROW),
-            contentDescription = null,              // decorative
-            tint = OnAccent,
-            modifier = Modifier.size(20.dp)
-        )
+        // Play icon placeholder
+        Text("▶", color = OnAccent, fontSize = 14.sp)
     }
 }
 
-// ---- "Today's Goals ........ 2/4" ----
 @Composable
 private fun GoalsHeader(done: Int, total: Int) {
     Row(
@@ -331,17 +324,16 @@ private fun GoalsHeader(done: Int, total: Int) {
             color = TextPrimary,
             fontSize = 18.sp,
             fontWeight = FontWeight.Bold,
-            modifier = Modifier.weight(1f)          // pushes the counter to the right
+            modifier = Modifier.weight(1f)
         )
         Text(
-            text = "$done/$total",
+            text = "$done of $total completed",
             color = TextSecondary,
             fontSize = 14.sp
         )
     }
 }
 
-// ---- One goal: checkbox + title ----
 @Composable
 private fun GoalRow(goal: Goal, onClick: () -> Unit) {
     Row(
@@ -349,10 +341,10 @@ private fun GoalRow(goal: Goal, onClick: () -> Unit) {
             .fillMaxWidth()
             .clip(RoundedCornerShape(12.dp))
             .clickable(onClick = onClick)
-            .padding(vertical = 6.dp),
+            .background(Surface)
+            .padding(16.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // Custom checkbox: filled green when done, grey outline when not
         if (goal.done) {
             Box(
                 modifier = Modifier
@@ -379,33 +371,90 @@ private fun GoalRow(goal: Goal, onClick: () -> Unit) {
 
         Spacer(Modifier.width(14.dp))
 
-        Text(text = goal.title, color = TextPrimary, fontSize = 16.sp)
+        Column(modifier = Modifier.weight(1f)) {
+            Text(text = goal.title, color = TextPrimary, fontSize = 16.sp, fontWeight = FontWeight.Medium)
+            Text(text = goal.subText, color = TextSecondary, fontSize = 12.sp)
+        }
+
+        // Chevron Right
+        Text(">", color = TextSecondary, fontSize = 18.sp)
     }
 }
 
-// ---- Bottom navigation bar (same look as the Habits screen) ----
-// TIP: later, move this into its own file (AppBottomBar.kt) and use it on
-// every screen, so you only maintain
+@Composable
+private fun QuickActionsRow() {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp), // keep items off the screen edges
+        horizontalArrangement = Arrangement.SpaceBetween // SpaceEvenly also works
+    ) {
+        // PROBLEM 1 FIXED: parameter is named `icon`, not `emoji`.
+        // We're passing a Painter (from painterResource), so the call
+        // must match the function signature — no `emoji =` keyword here.
+        QuickActionItem(icon = painterResource(R.drawable.target), label = "Focus Mode")
+        QuickActionItem(icon = painterResource(R.drawable.googledocs), label = "Add Habit")
+        QuickActionItem(icon = painterResource(R.drawable.spreadsheetapp),   label = "View Stats")
+        QuickActionItem(icon = painterResource(R.drawable.leaf1),      label = "Plant Tree")
+    }
+}
+
+@Composable
+private fun QuickActionItem(
+    icon: Painter,      // PROBLEM 2: this is a Painter, not an emoji String.
+    // If you ever want text emojis, rename this param
+    // to `emoji: String` and use Text instead of Image.
+    label: String
+) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Box(
+            modifier = Modifier
+                .size(56.dp)
+                .clip(RoundedCornerShape(16.dp))
+                .background(Surface),
+            contentAlignment = Alignment.Center
+        ) {
+            Image(
+                painter = icon,
+                contentDescription = label,
+                modifier = Modifier.size(28.dp),
+                // PROBLEM 3: without contentScale, non-square or oversized
+                // PNGs can stretch. Fit keeps aspect ratio inside the 28dp box.
+                contentScale = ContentScale.Fit
+            )
+        }
+
+        Spacer(modifier = Modifier.height(6.dp))
+
+        Text(
+            text = label,
+            color = TextSecondary,
+            fontSize = 11.sp,
+            maxLines = 1,
+            textAlign = TextAlign.Center // long labels center nicely
+        )
+    }
+}
+
 
 // =====================================================================
-// 5. PREVIEW - fake data; delete when you wire in the real ViewModel.
+// PREVIEW
 // =====================================================================
 
 private val sampleHomeState = HomeUiState(
     userName = "Alex",
     quote = "\"Discipline today creates the life you want tomorrow.\"",
-    focusSessions = 3,
-    focusTime = "2h 15m",
-    treesGrown = 5,
+    focusSessions = 2,
+    focusTime = "2h 0m",
+    treesGrown = 2,
     goals = listOf(
-        Goal(1, "Study DSA", true),
-        Goal(2, "Read a book", true),
-        Goal(3, "Exercise", false),
-        Goal(4, "Learn something new", false)
+        Goal(1, "Study DSA", "Daily target • 2 sessions", false)
     )
 )
 
-@Preview(showBackground = true, backgroundColor = 0xFF08140F, widthDp = 390, heightDp = 800)
+@Preview(showBackground = true, backgroundColor = 0xFF08140F, widthDp = 390, heightDp = 900)
 @Composable
 private fun HomeScreenPreview() {
     HomeScreen(state = sampleHomeState)
