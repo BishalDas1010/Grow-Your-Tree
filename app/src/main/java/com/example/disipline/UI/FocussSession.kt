@@ -19,9 +19,11 @@ package com.example.disipline.UI
 //       Focus       -> no breaks
 //       Short Break -> 5 min breaks, 2 times (3 times if 45+ min)
 //       Long Break  -> one 15 min break
+//   - The blocked apps list comes from the Block Apps screen (saved list).
 // =====================================================================
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -49,7 +51,10 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -58,6 +63,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -65,8 +72,12 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import com.example.disipline.R
 import com.example.disipline.UI.Habits.habit_screen.Habit
+import com.example.disipline.blocker.BlockedApp
+import com.example.disipline.blocker.loadSelectedApps
 import com.example.disipline.data.Session
 import com.example.disipline.ui.theme.Accent
 import com.example.disipline.ui.theme.BgDark
@@ -76,6 +87,8 @@ import com.example.disipline.ui.theme.Outline
 import com.example.disipline.ui.theme.Surface
 import com.example.disipline.ui.theme.TextPrimary
 import com.example.disipline.ui.theme.TextSecondary
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 
 enum class FocusMode(val label: String, val hint: String) {
@@ -96,7 +109,7 @@ data class FocusSettings(
     val task: String,
     val ambientSound: Boolean,
     val blockApps: Boolean,
-    val blockedApps: List<String> = emptyList()   // names of the apps to block
+    val blockedApps: List<String> = emptyList()   // PACKAGE NAMES of the apps to block
 ) {
     // Focus / break pieces in order, for example Focus 7, Break 5, Focus 7 ...
     val plan: List<FocusSegment> get() = buildPlan(mode, minutes)
@@ -128,15 +141,6 @@ private const val MIN_FOCUS_CHUNK = 5      // every focus piece is at least this
 
 // Colour of the break pieces in the plan bar
 private val BreakColor = Color(0xFFFFB74D)
-
-// Apps the user can choose to block (name to emoji). Edit this list freely.
-private val blockableApps = listOf(
-    "YouTube" to "▶️",
-    "Instagram" to "📸",
-    "TikTok" to "🎵",
-    "WhatsApp" to "💬",
-    "Chrome" to "🌐"
-)
 
 // Splits the session into focus pieces and breaks. The breaks are INSIDE the
 // total time. Example: 30 min + Short Break -> Focus 7, Break 5, Focus 7, Break 5, Focus 6.
@@ -221,8 +225,11 @@ fun FocusSessionScreen(
     sessionInfo: FocusSessionInfo? = null,         // set when opened from "Start Next Session"
     initialTask: String = "",                      // pre-fill the Task box
     onBack: () -> Unit = {},                       // back arrow tapped
+    onOpenBlockApps: () -> Unit = {},              // "Manage" tapped -> Block Apps screen
     onStartSession: (FocusSettings) -> Unit = {}   // green button tapped
 ) {
+    val context = LocalContext.current
+
     // ---- Form state: what the user is currently choosing ----
     // remember(sessionInfo): the form restarts with new values when a different session is opened
     var mode by remember(sessionInfo) { mutableStateOf(FocusMode.Focus) }
@@ -230,8 +237,28 @@ fun FocusSessionScreen(
     var task by remember(sessionInfo) { mutableStateOf(sessionInfo?.sessionName ?: initialTask) }
     var ambientSound by remember { mutableStateOf(true) }
     var blockApps by remember { mutableStateOf(true) }
-    // All apps start selected
-    var blockedApps by remember { mutableStateOf(blockableApps.map { it.first }.toSet()) }
+
+    // The real apps saved on the Block Apps screen
+    var savedApps by remember { mutableStateOf<List<BlockedApp>>(emptyList()) }
+    // Apps the user UNTICKED for this session only (everything else is ticked)
+    var untickedApps by remember { mutableStateOf<Set<String>>(emptySet()) }
+    // Package names that will be blocked in this session
+    val blockedApps: Set<String> =
+        savedApps.map { it.packageName }.filter { it !in untickedApps }.toSet()
+
+    // Reload the saved list every time this screen comes back into view
+    var refresh by remember { mutableIntStateOf(0) }
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) refresh++
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
+    LaunchedEffect(refresh) {
+        savedApps = withContext(Dispatchers.IO) { loadSelectedApps(context) }
+    }
 
     val plan = buildPlan(mode, minutes)
 
@@ -254,7 +281,7 @@ fun FocusSessionScreen(
                                 ambientSound = ambientSound,
                                 blockApps = blockApps,
                                 blockedApps = if (blockApps) {
-                                    blockableApps.map { it.first }.filter { it in blockedApps }
+                                    savedApps.map { it.packageName }.filter { it in blockedApps }
                                 } else {
                                     emptyList()
                                 }
@@ -361,10 +388,12 @@ fun FocusSessionScreen(
             if (blockApps) {
                 Spacer(Modifier.height(16.dp))
                 BlockedAppsCard(
+                    apps = savedApps,
                     selected = blockedApps,
-                    onToggle = { name ->
-                        blockedApps = if (name in blockedApps) blockedApps - name else blockedApps + name
-                    }
+                    onToggle = { pkg ->
+                        untickedApps = if (pkg in untickedApps) untickedApps - pkg else untickedApps + pkg
+                    },
+                    onManage = onOpenBlockApps
                 )
             }
 
@@ -703,11 +732,13 @@ private fun ToggleRow(
     }
 }
 
-// ---- List of apps to block: tap a row to select / unselect it ----
+// ---- List of the REAL saved apps: tap a row to tick / untick it for this session ----
 @Composable
 private fun BlockedAppsCard(
+    apps: List<BlockedApp>,
     selected: Set<String>,
-    onToggle: (String) -> Unit
+    onToggle: (String) -> Unit,
+    onManage: () -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -718,44 +749,66 @@ private fun BlockedAppsCard(
             .padding(14.dp),
         verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                text = "Selected Apps",
+                color = TextPrimary,
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.weight(1f)
+            )
+            Text(
+                text = "Manage",
+                color = Accent,
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier
+                    .clip(RoundedCornerShape(8.dp))
+                    .clickable(onClick = onManage)
+                    .padding(horizontal = 8.dp, vertical = 4.dp)
+            )
+        }
+
+        if (apps.isEmpty()) {
+            Text(
+                text = "No apps selected yet. Tap Manage to add apps.",
+                color = TextSecondary,
+                fontSize = 12.sp,
+                modifier = Modifier.padding(vertical = 8.dp)
+            )
+            return@Column
+        }
+
         Text(
-            text = "Selected Apps",
-            color = TextPrimary,
-            fontSize = 16.sp,
-            fontWeight = FontWeight.Bold
-        )
-        Text(
-            text = "${selected.size} of ${blockableApps.size} blocked during the session",
+            text = "${selected.size} of ${apps.size} blocked during the session",
             color = TextSecondary,
             fontSize = 12.sp
         )
         Spacer(Modifier.height(8.dp))
 
-        blockableApps.forEach { (name, emoji) ->
-            val isSelected = name in selected
+        apps.forEach { app ->
+            val isSelected = app.packageName in selected
 
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(12.dp))
-                    .clickable { onToggle(name) }
+                    .clickable { onToggle(app.packageName) }
                     .padding(vertical = 8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Box(
+                Image(
+                    bitmap = app.icon,
+                    contentDescription = null,
                     modifier = Modifier
                         .size(32.dp)
-                        .clip(CircleShape)
-                        .background(IconCircle),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(text = emoji, fontSize = 16.sp)
-                }
+                        .clip(RoundedCornerShape(8.dp))
+                )
 
                 Spacer(Modifier.width(12.dp))
 
                 Text(
-                    text = name,
+                    text = app.label,
                     color = TextPrimary,
                     fontSize = 15.sp,
                     modifier = Modifier.weight(1f)

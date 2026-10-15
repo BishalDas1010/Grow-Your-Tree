@@ -2,13 +2,17 @@ package com.example.disipline.UI
 
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -26,6 +30,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -38,7 +43,9 @@ import androidx.navigation.compose.rememberNavController
 import com.example.disipline.R
 import com.example.disipline.UI.Habits.habit_screen.HabitsRoute
 import com.example.disipline.UI.Stas.StatisticsRoute
+import com.example.disipline.UI.blockapps.BlockAppsScreen
 import com.example.disipline.UI.profile.EditProfileRoute
+import com.example.disipline.UI.profile.ProfileActions
 import com.example.disipline.UI.profile.ProfileRoute
 import com.example.disipline.UI.taskcomple.FocusCompleteScreen
 import com.example.disipline.Viewmodel.FocusTimerViewModel
@@ -46,6 +53,7 @@ import com.example.disipline.data.HomeViewModel
 import com.example.disipline.ui.theme.Accent
 import com.example.disipline.ui.theme.BgDark
 import com.example.disipline.ui.theme.Outline
+import com.example.disipline.ui.theme.TextPrimary
 import com.example.disipline.ui.theme.TextSecondary
 
 object Routes {
@@ -57,7 +65,34 @@ object Routes {
     const val STATS = "stats"
     const val PROFILE = "profile"
     const val EDIT_PROFILE = "edit_profile"
+
+    // ---- Profile sub-screens ----
+    const val SETTINGS = "settings"
+    const val GOALS = "goals"
+    const val PROGRESS = "progress"
+    const val FOCUS_SETTINGS = "focus_settings"
+    const val THEMES = "themes"
+    const val NOTIFICATIONS = "notifications"
+    const val APP_BLOCKING = "app_blocking"
+    const val SOUND = "sound"
+    const val HELP = "help"
+    const val ABOUT = "about"
 }
+
+// Screens opened from Profile. The bottom bar is hidden on these.
+private val profileSubRoutes = setOf(
+    Routes.EDIT_PROFILE,
+    Routes.SETTINGS,
+    Routes.GOALS,
+    Routes.PROGRESS,
+    Routes.FOCUS_SETTINGS,
+    Routes.THEMES,
+    Routes.NOTIFICATIONS,
+    Routes.APP_BLOCKING,
+    Routes.SOUND,
+    Routes.HELP,
+    Routes.ABOUT
+)
 
 // =====================================================================
 // TAB ICONS
@@ -93,10 +128,11 @@ fun AppNavigation() {
     var focusHabitId by rememberSaveable { mutableStateOf<Int?>(null) }
     var focusSessionId by rememberSaveable { mutableStateOf<Int?>(null) }
 
-    // Hide bottom bar on full-screen flows (timer, finish, edit profile).
-    val showBottomBar = currentDestination?.route != Routes.TIMER &&
-            currentDestination?.route != Routes.FINISH &&
-            currentDestination?.route != Routes.EDIT_PROFILE
+    // Hide bottom bar on full-screen flows (timer, finish, profile sub-screens).
+    val currentRoute = currentDestination?.route
+    val showBottomBar = currentRoute != Routes.TIMER &&
+            currentRoute != Routes.FINISH &&
+            currentRoute !in profileSubRoutes
 
     fun goTo(route: String) {
         navController.navigate(route) {
@@ -104,6 +140,11 @@ fun AppNavigation() {
             launchSingleTop = true
             restoreState = true
         }
+    }
+
+    // Plain push (keeps Profile underneath so Back returns to it).
+    fun push(route: String) {
+        navController.navigate(route) { launchSingleTop = true }
     }
 
     fun openFocus(
@@ -286,20 +327,109 @@ fun AppNavigation() {
                 )
             }
 
-            // ---- PROFILE (one block only) ----
+            // ---- PROFILE ----
             composable(Routes.PROFILE) {
                 ProfileRoute(
-                    onEditClick = { navController.navigate(Routes.EDIT_PROFILE) },
-                    onSettingsClick = { /* open settings later */ }
+                    actions = ProfileActions(
+                        onEditProfile = { push(Routes.EDIT_PROFILE) },
+                        onGoals = { push(Routes.GOALS) },
+                        onProgress = { push(Routes.PROGRESS) },
+                        onFocusSettings = { push(Routes.FOCUS_SETTINGS) },
+                        onThemes = { push(Routes.THEMES) },
+                        onNotifications = { push(Routes.NOTIFICATIONS) },
+                        onAppBlocking = { push(Routes.APP_BLOCKING) },
+                        onSound = { push(Routes.SOUND) },
+                        onHelp = { push(Routes.HELP) },
+                        onAbout = { push(Routes.ABOUT) }
+                    ),
+                    onEditClick = { push(Routes.EDIT_PROFILE) },
+                    onSettingsClick = { push(Routes.SETTINGS) }
                 )
             }
 
-            // ---- EDIT PROFILE (new) ----
+            // ---- EDIT PROFILE (real screen) ----
             composable(Routes.EDIT_PROFILE) {
                 EditProfileRoute(
                     onBack = { navController.popBackStack() }
                 )
             }
+
+            // ---- PROFILE SUB-SCREENS (placeholders) ----
+            // Replace each PlaceholderScreen with your real screen when ready,
+            // e.g.  GoalsScreen(onBack = { navController.popBackStack() })
+            composable(Routes.SETTINGS) {
+                EditProfileRoute(
+                    onBack = { navController.popBackStack() }
+                )            }
+            composable(Routes.GOALS) {
+                HabitsRoute(
+                    onBack = { goTo(Routes.HOME) },
+                    onStartSession = { habit, session ->
+                        openFocus(
+                            info = focusInfoFor(habit, session),
+                            habitId = habit.id,
+                            sessionId = session.id
+                        )
+                    }
+                )
+
+            }
+            composable(Routes.PROGRESS) {
+                PlaceholderScreen("Progress & Stats") { navController.popBackStack() }
+            }
+            composable(Routes.FOCUS_SETTINGS) {
+                PlaceholderScreen("Focus Settings") { navController.popBackStack() }
+            }
+            composable(Routes.THEMES) {
+                PlaceholderScreen("Themes") { navController.popBackStack() }
+            }
+            composable(Routes.NOTIFICATIONS) {
+                PlaceholderScreen("Notifications") { navController.popBackStack() }
+            }
+            composable(Routes.APP_BLOCKING) {
+                BlockAppsScreen(
+                    onBack = { navController.popBackStack() }
+                )
+            }
+            composable(Routes.SOUND) {
+                PlaceholderScreen("Sound & White Noise") { navController.popBackStack() }
+            }
+            composable(Routes.HELP) {
+                PlaceholderScreen("Help & Feedback") { navController.popBackStack() }
+            }
+            composable(Routes.ABOUT) {
+                PlaceholderScreen("About") { navController.popBackStack() }
+            }
         }
+    }
+}
+
+// =====================================================================
+// TEMPORARY SCREEN — so every Profile row visibly works
+// =====================================================================
+
+@Composable
+private fun PlaceholderScreen(title: String, onBack: () -> Unit) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(BgDark)
+            .statusBarsPadding()
+            .padding(20.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        Text(
+            "‹ Back",
+            color = Accent,
+            fontSize = 16.sp,
+            modifier = Modifier.clickable(onClick = onBack)
+        )
+        Text(
+            title,
+            color = TextPrimary,
+            fontSize = 28.sp,
+            fontWeight = FontWeight.Bold
+        )
+        Text("This screen is not built yet.", color = TextSecondary, fontSize = 14.sp)
     }
 }

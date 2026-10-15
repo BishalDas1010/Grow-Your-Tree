@@ -56,13 +56,6 @@ import com.example.disipline.ui.theme.Surface
 import com.example.disipline.ui.theme.TextPrimary
 import com.example.disipline.ui.theme.TextSecondary
 
-// =====================================================================
-// PROFILE — Route + Screen split
-//
-//   ProfileRoute  -> owns the ViewModel, reads DB, launches picker
-//   ProfileScreen -> pure UI, takes plain data, previews fine
-// =====================================================================
-
 // ---------- Data models ----------
 
 data class ProfileStat(
@@ -94,6 +87,23 @@ data class ProfileData(
     val sections: List<ProfileMenuSection>
 )
 
+/**
+ * One callback per clickable menu row.
+ * Wire these to navigation where you call ProfileRoute.
+ */
+data class ProfileActions(
+    val onEditProfile: () -> Unit = {},
+    val onGoals: () -> Unit = {},
+    val onProgress: () -> Unit = {},
+    val onFocusSettings: () -> Unit = {},
+    val onThemes: () -> Unit = {},
+    val onNotifications: () -> Unit = {},
+    val onAppBlocking: () -> Unit = {},
+    val onSound: () -> Unit = {},
+    val onHelp: () -> Unit = {},
+    val onAbout: () -> Unit = {}
+)
+
 // =====================================================================
 // ROUTE
 // =====================================================================
@@ -101,6 +111,7 @@ data class ProfileData(
 @Composable
 fun ProfileRoute(
     viewModel: ProfileViewModel = viewModel(),
+    actions: ProfileActions = ProfileActions(),
     onEditClick: () -> Unit = {},
     onSettingsClick: () -> Unit = {}
 ) {
@@ -111,7 +122,7 @@ fun ProfileRoute(
         contract = ActivityResultContracts.GetContent()
     ) { uri -> uri?.let { viewModel.updateAvatar(it) } }
 
-    val data = remember(entity, stats) {
+    val data = remember(entity, stats, actions) {
         buildProfileData(
             name = entity?.name?.takeIf { it.isNotBlank() } ?: "Your Name",
             subtitle = entity?.subtitle?.takeIf { it.isNotBlank() }
@@ -119,7 +130,8 @@ fun ProfileRoute(
             quote = entity?.quote?.takeIf { it.isNotBlank() }
                 ?: "Discipline today creates the life you want tomorrow.",
             avatarPath = entity?.avatarPath,
-            stats = stats
+            stats = stats,
+            actions = actions
         )
     }
 
@@ -140,7 +152,7 @@ fun ProfileScreen(
     data: ProfileData,
     onAvatarClick: () -> Unit = {},
     onEditClick: () -> Unit = {},
-    onSettingsClick: () -> Unit = {}
+    onSettingsClick: () -> Unit = {},
 ) {
     Scaffold(
         containerColor = BgDark,
@@ -183,7 +195,10 @@ fun ProfileScreen(
 // =====================================================================
 
 @Composable
-private fun ProfileHeader(onEditClick: () -> Unit, onSettingsClick: () -> Unit) {
+private fun ProfileHeader(
+    onEditClick: () -> Unit,
+    onSettingsClick: () -> Unit
+) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.Top
@@ -249,7 +264,9 @@ private fun ProfileCard(data: ProfileData, onAvatarClick: () -> Unit) {
             painter = painterResource(data.bannerRes),
             contentDescription = null,
             contentScale = ContentScale.Crop,
-            modifier = Modifier.fillMaxWidth().height(220.dp)
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(220.dp)
         )
         Box(
             modifier = Modifier
@@ -259,7 +276,11 @@ private fun ProfileCard(data: ProfileData, onAvatarClick: () -> Unit) {
                     Brush.verticalGradient(listOf(Color(0xCC0E1F17), Color(0x99000000)))
                 )
         )
-        Column(Modifier.fillMaxWidth().padding(20.dp)) {
+        Column(
+            Modifier
+                .fillMaxWidth()
+                .padding(20.dp)
+        ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Avatar(data.avatarPath, data.avatarFallbackRes, onAvatarClick)
                 Spacer(Modifier.width(16.dp))
@@ -316,14 +337,18 @@ private fun Avatar(avatarPath: String?, fallbackRes: Int, onClick: () -> Unit) {
                     bitmap = bitmap,
                     contentDescription = "Avatar",
                     contentScale = ContentScale.Crop,
-                    modifier = Modifier.fillMaxSize().clip(CircleShape)
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .clip(CircleShape)
                 )
             } else {
                 Image(
                     painter = painterResource(fallbackRes),
                     contentDescription = "Avatar",
                     contentScale = ContentScale.Crop,
-                    modifier = Modifier.fillMaxSize().clip(CircleShape)
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .clip(CircleShape)
                 )
             }
         }
@@ -480,7 +505,8 @@ private fun buildProfileData(
     subtitle: String,
     quote: String,
     avatarPath: String?,
-    stats: ProfileStats                     // non-null now
+    stats: ProfileStats,
+    actions: ProfileActions
 ): ProfileData = ProfileData(
     name = name,
     subtitle = subtitle,
@@ -489,35 +515,65 @@ private fun buildProfileData(
     avatarFallbackRes = R.drawable.habits,
     bannerRes = R.drawable.leaf1,
     stats = listOf(
-        ProfileStat(R.drawable.leaf1,     stats.focusSessions.toString(),  "Focus Sessions"),
-        ProfileStat(R.drawable.stopwatch, stats.totalFocusLabel,           "Total Focus"),
-        ProfileStat(R.drawable.barchart,  stats.habitsTracked.toString(),  "Habits Tracked"),
-        ProfileStat(R.drawable.leaf1,     stats.treesGrown.toString(),     "Trees Grown")
+        ProfileStat(R.drawable.leaf1, stats.focusSessions.toString(), "Focus Sessions"),
+        ProfileStat(R.drawable.stopwatch, stats.totalFocusLabel, "Total Focus"),
+        ProfileStat(R.drawable.barchart, stats.habitsTracked.toString(), "Habits Tracked"),
+        ProfileStat(R.drawable.leaf1, stats.treesGrown.toString(), "Trees Grown")
     ),
     sections = listOf(
         ProfileMenuSection(
             "Account",
             listOf(
-                ProfileMenuItem(R.drawable.habits, "Edit Profile", "Update your name, photo and bio"),
-                ProfileMenuItem(R.drawable.stopwatch, "My Goals", "Set and track your personal goals"),
-                ProfileMenuItem(R.drawable.barchart, "Progress & Stats", "View your focus, habits and growth")
+                ProfileMenuItem(
+                    R.drawable.habits, "Edit Profile",
+                    "Update your name, photo and bio", actions.onEditProfile
+                ),
+                ProfileMenuItem(
+                    R.drawable.stopwatch, "My Goals",
+                    "Set and track your personal goals", actions.onGoals
+                ),
+                ProfileMenuItem(
+                    R.drawable.barchart, "Progress & Stats",
+                    "View your focus, habits and growth", actions.onProgress
+                )
             )
         ),
         ProfileMenuSection(
             "App Settings",
             listOf(
-                ProfileMenuItem(R.drawable.concentrate, "Focus Settings", "Timer, break time and notifications"),
-                ProfileMenuItem(R.drawable.home, "Themes", "Light, Dark, System"),
-                ProfileMenuItem(R.drawable.user, "Notifications", "Session reminders and alerts"),
-                ProfileMenuItem(R.drawable.habits, "App Blocking", "Manage blocked apps"),
-                ProfileMenuItem(R.drawable.leaf1, "Sound & White Noise", "Ambient sounds for better focus")
+                ProfileMenuItem(
+                    R.drawable.concentrate, "Focus Settings",
+                    "Timer, break time and notifications", actions.onFocusSettings
+                ),
+                ProfileMenuItem(
+                    R.drawable.home, "Themes",
+                    "Light, Dark, System", actions.onThemes
+                ),
+                ProfileMenuItem(
+                    R.drawable.user, "Notifications",
+                    "Session reminders and alerts", actions.onNotifications
+                ),
+                ProfileMenuItem(
+                    R.drawable.habits, "App Blocking",
+                    "Manage blocked apps", actions.onAppBlocking
+                ),
+                ProfileMenuItem(
+                    R.drawable.leaf1, "Sound & White Noise",
+                    "Ambient sounds for better focus", actions.onSound
+                )
             )
         ),
         ProfileMenuSection(
             "Support",
             listOf(
-                ProfileMenuItem(R.drawable.concentrate, "Help & Feedback", "Get help or share your feedback"),
-                ProfileMenuItem(R.drawable.habits, "About", "Version 1.0.0")
+                ProfileMenuItem(
+                    R.drawable.concentrate, "Help & Feedback",
+                    "Get help or share your feedback", actions.onHelp
+                ),
+                ProfileMenuItem(
+                    R.drawable.habits, "About",
+                    "Version 1.0.0", actions.onAbout
+                )
             )
         )
     )
@@ -531,46 +587,18 @@ private fun buildProfileData(
 @Composable
 private fun ProfileScreenPreview() {
     ProfileScreen(
-        data = ProfileData(
+        data = buildProfileData(
             name = "Vishal Das",
             subtitle = "Student • Learner • Builder",
             quote = "Discipline today creates the life you want tomorrow.",
             avatarPath = null,
-            avatarFallbackRes = R.drawable.habits,
-            bannerRes = R.drawable.leaf1,
-            stats = listOf(
-                ProfileStat(R.drawable.leaf1, "7", "Focus Sessions"),
-                ProfileStat(R.drawable.stopwatch, "4h 30m", "Total Focus"),
-                ProfileStat(R.drawable.barchart, "12", "Habits Tracked"),
-                ProfileStat(R.drawable.leaf1, "3", "Trees Grown")
+            stats = ProfileStats(
+                focusSessions = 7,
+                totalFocusMinutes = 270, // shows as "4h 30m"
+                habitsTracked = 12,
+                treesGrown = 3
             ),
-            sections = listOf(
-                ProfileMenuSection(
-                    "Account",
-                    listOf(
-                        ProfileMenuItem(R.drawable.habits, "Edit Profile", "Update your name, photo and bio"),
-                        ProfileMenuItem(R.drawable.stopwatch, "My Goals", "Set and track your personal goals"),
-                        ProfileMenuItem(R.drawable.barchart, "Progress & Stats", "View your focus, habits and growth")
-                    )
-                ),
-                ProfileMenuSection(
-                    "App Settings",
-                    listOf(
-                        ProfileMenuItem(R.drawable.concentrate, "Focus Settings", "Timer, break time and notifications"),
-                        ProfileMenuItem(R.drawable.home, "Themes", "Light, Dark, System"),
-                        ProfileMenuItem(R.drawable.user, "Notifications", "Session reminders and alerts"),
-                        ProfileMenuItem(R.drawable.habits, "App Blocking", "Manage blocked apps"),
-                        ProfileMenuItem(R.drawable.leaf1, "Sound & White Noise", "Ambient sounds for better focus")
-                    )
-                ),
-                ProfileMenuSection(
-                    "Support",
-                    listOf(
-                        ProfileMenuItem(R.drawable.concentrate, "Help & Feedback", "Get help or share your feedback"),
-                        ProfileMenuItem(R.drawable.habits, "About", "Version 1.0.0")
-                    )
-                )
-            )
+            actions = ProfileActions()
         )
     )
 }
