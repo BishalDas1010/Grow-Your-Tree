@@ -31,7 +31,8 @@ import com.example.disipline.ui.theme.*
 @Composable
 fun BlockAppsScreen(
     onBack: () -> Unit,
-    viewModel: BlockAppsViewModel = viewModel()
+    viewModel: BlockAppsViewModel = viewModel(),
+    onOpenPermissionGuide: () -> Unit
 ) {
     val context = LocalContext.current
     val state by viewModel.state.collectAsState()

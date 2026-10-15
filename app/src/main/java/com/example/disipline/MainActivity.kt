@@ -68,6 +68,7 @@ import com.example.disipline.data.reposotry.HabitRepository
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.core.view.WindowCompat
+import com.example.disipline.UI.DisiplineApp
 import com.example.disipline.UI.profile.ProfileNavHost
 import com.example.disipline.data.reposotry.ProfileRepository
 
@@ -89,7 +90,7 @@ class MainActivity : ComponentActivity() {
             .isAppearanceLightNavigationBars = false
 
         setContent {
-            AppNavigation()
+            DisiplineApp()
 
 
         }
