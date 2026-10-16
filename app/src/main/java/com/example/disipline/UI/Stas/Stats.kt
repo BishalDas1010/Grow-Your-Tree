@@ -22,6 +22,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -29,6 +30,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -85,7 +87,7 @@ import kotlin.math.roundToInt
 // =====================================================================
 
 enum class StatsPeriod(val label: String) {
-    Day("Day"),
+    Day("Today"),
     Week("Week"),
     Month("Month"),
     Year("Year")
@@ -416,14 +418,18 @@ fun StatisticsScreen(
 ) {
     Scaffold(
         containerColor = BgDark,
-        contentWindowInsets = WindowInsets(0, 0, 0, 0)
+        contentWindowInsets = WindowInsets(15, 0, 15, 0)
     ) { padding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 20.dp)
+                .padding(
+                    top = WindowInsets.statusBars
+                        .asPaddingValues()
+                        .calculateTopPadding()
+                )
         ) {
             Spacer(Modifier.height(12.dp))
 
@@ -489,12 +495,12 @@ private fun StatsTopBar(
     onSettingsClick: () -> Unit
 ) {
     Row(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth().padding(10.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        IconButton(onClick = onBack, modifier = Modifier.size(40.dp)) {
+        IconButton(onClick = onBack, modifier = Modifier.size(30.dp)) {
             Icon(
-                painter = painterResource(R.drawable.ic_launcher_foreground),
+                painter = painterResource(R.drawable.left),
                 contentDescription = "Back",
                 tint = TextPrimary
             )
@@ -509,13 +515,7 @@ private fun StatsTopBar(
             modifier = Modifier.weight(1f)
         )
 
-        IconButton(onClick = onSettingsClick, modifier = Modifier.size(40.dp)) {
-            Icon(
-                painter = painterResource(R.drawable.ic_launcher_foreground),
-                contentDescription = "Settings",
-                tint = TextPrimary
-            )
-        }
+
     }
 }
 

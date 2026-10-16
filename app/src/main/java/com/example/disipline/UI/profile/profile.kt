@@ -4,6 +4,12 @@ import android.graphics.BitmapFactory
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.DrawableRes
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -31,12 +37,13 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
@@ -48,6 +55,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.disipline.R
+import com.example.disipline.UI.Them.RotatingChevron
+import com.example.disipline.UI.Them.ThemeDropdownSurface
+
 import com.example.disipline.ui.theme.Accent
 import com.example.disipline.ui.theme.AppColors
 import com.example.disipline.ui.theme.BgDark
@@ -56,8 +66,12 @@ import com.example.disipline.ui.theme.Outline
 import com.example.disipline.ui.theme.Surface
 import com.example.disipline.ui.theme.TextPrimary
 import com.example.disipline.ui.theme.TextSecondary
+import com.example.disipline.ui.theme.ThemeManager
+import com.example.disipline.ui.theme.ThemePalette
 
-// ---------- Data models ----------
+// =====================================================================
+// DATA MODELS
+// =====================================================================
 
 data class ProfileStat(
     @DrawableRes val icon: Int,
@@ -69,6 +83,7 @@ data class ProfileMenuItem(
     @DrawableRes val icon: Int,
     val title: String,
     val subtitle: String,
+    val showsThemeDropdown: Boolean = false,   // 👈 NEW
     val onClick: () -> Unit = {}
 )
 
@@ -90,14 +105,14 @@ data class ProfileData(
 
 /**
  * One callback per clickable menu row.
- * Wire these to navigation where you call ProfileRoute.
  */
 data class ProfileActions(
     val onEditProfile: () -> Unit = {},
     val onGoals: () -> Unit = {},
     val onProgress: () -> Unit = {},
     val onFocusSettings: () -> Unit = {},
-    val onThemes: () -> Unit = {},
+    val onThemes: () -> Unit = {},                       // opens full Themes screen (optional)
+    val onThemeSelected: (ThemePalette) -> Unit = {},    // 👈 NEW — fired by dropdown
     val onNotifications: () -> Unit = {},
     val onAppBlocking: () -> Unit = {},
     val onSound: () -> Unit = {},
@@ -140,12 +155,13 @@ fun ProfileRoute(
         data = data,
         onAvatarClick = { picker.launch("image/*") },
         onEditClick = onEditClick,
-        onSettingsClick = onSettingsClick
+        onSettingsClick = onSettingsClick,
+        onThemeSelected = actions.onThemeSelected
     )
 }
 
 // =====================================================================
-// SCREEN — pure UI
+// SCREEN
 // =====================================================================
 
 @Composable
@@ -154,6 +170,7 @@ fun ProfileScreen(
     onAvatarClick: () -> Unit = {},
     onEditClick: () -> Unit = {},
     onSettingsClick: () -> Unit = {},
+    onThemeSelected: (ThemePalette) -> Unit = {}
 ) {
     Scaffold(
         containerColor = BgDark,
@@ -183,7 +200,10 @@ fun ProfileScreen(
                 Spacer(Modifier.height(24.dp))
                 SectionHeader(section.title)
                 Spacer(Modifier.height(10.dp))
-                MenuSection(section.items)
+                MenuSection(
+                    items = section.items,
+                    onThemeSelected = onThemeSelected
+                )
             }
 
             Spacer(Modifier.height(24.dp))
@@ -274,7 +294,12 @@ private fun ProfileCard(data: ProfileData, onAvatarClick: () -> Unit) {
                 .fillMaxWidth()
                 .height(220.dp)
                 .background(
-                    Brush.verticalGradient(listOf(AppColors.ElevatedSurface.copy(alpha = 0.8f), AppColors.Background.copy(alpha = 0.6f)))
+                    Brush.verticalGradient(
+                        listOf(
+                            AppColors.ElevatedSurface.copy(alpha = 0.8f),
+                            AppColors.Background.copy(alpha = 0.6f)
+                        )
+                    )
                 )
         )
         Column(
@@ -436,7 +461,10 @@ private fun SectionHeader(title: String) {
 }
 
 @Composable
-private fun MenuSection(items: List<ProfileMenuItem>) {
+private fun MenuSection(
+    items: List<ProfileMenuItem>,
+    onThemeSelected: (ThemePalette) -> Unit
+) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -445,7 +473,7 @@ private fun MenuSection(items: List<ProfileMenuItem>) {
             .border(1.dp, Outline, RoundedCornerShape(20.dp))
     ) {
         items.forEachIndexed { index, item ->
-            MenuRow(item)
+            MenuRow(item = item, onThemeSelected = onThemeSelected)
             if (index < items.lastIndex) {
                 Box(
                     modifier = Modifier
@@ -459,41 +487,83 @@ private fun MenuSection(items: List<ProfileMenuItem>) {
     }
 }
 
+// =====================================================================
+// MENU ROW  (single, merged version with optional theme dropdown)
+// =====================================================================
+
 @Composable
-private fun MenuRow(item: ProfileMenuItem) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = item.onClick)
-            .padding(horizontal = 16.dp, vertical = 14.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Box(
+private fun MenuRow(
+    item: ProfileMenuItem,
+    onThemeSelected: (ThemePalette) -> Unit
+) {
+    var expanded by remember { mutableStateOf(false) }
+
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Row(
             modifier = Modifier
-                .size(42.dp)
-                .clip(CircleShape)
-                .background(Accent.copy(alpha = 0.15f)),
-            contentAlignment = Alignment.Center
+                .fillMaxWidth()
+                .clickable {
+                    if (item.showsThemeDropdown) expanded = !expanded
+                    else item.onClick()
+                }
+                .padding(horizontal = 16.dp, vertical = 14.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(
-                painter = painterResource(item.icon),
-                contentDescription = null,
-                tint = Accent,
-                modifier = Modifier.size(20.dp)
+            Box(
+                modifier = Modifier
+                    .size(42.dp)
+                    .clip(CircleShape)
+                    .background(Accent.copy(alpha = 0.15f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    painter = painterResource(item.icon),
+                    contentDescription = null,
+                    tint = Accent,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+            Spacer(Modifier.width(14.dp))
+            Column(Modifier.weight(1f)) {
+                Text(
+                    item.title,
+                    color = TextPrimary,
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.SemiBold
+                )
+                Spacer(Modifier.height(2.dp))
+                Text(item.subtitle, color = TextSecondary, fontSize = 12.sp)
+            }
+
+            // Rotating chevron for the theme row; static arrow otherwise
+            if (item.showsThemeDropdown) {
+                RotatingChevron(expanded = expanded)
+            } else {
+                Text(
+                    "›",
+                    color = TextSecondary,
+                    fontSize = 22.sp,
+                    fontWeight = FontWeight.Light
+                )
+            }
+        }
+
+        // Inline theme dropdown
+        AnimatedVisibility(
+            visible = expanded,
+            enter = fadeIn(tween(180)) + expandVertically(tween(220)),
+            exit = fadeOut(tween(140)) + shrinkVertically(tween(200))
+        ) {
+            ThemeDropdownSurface(
+                activeId = ThemeManager.active.id,
+                onPick = { palette ->
+                    ThemeManager.apply(palette)   // re-colors the entire app
+                    onThemeSelected(palette)      // optional persistence / side-effects
+                    expanded = false
+                },
+                modifier = Modifier.padding(start = 72.dp, end = 16.dp, bottom = 12.dp)
             )
         }
-        Spacer(Modifier.width(14.dp))
-        Column(Modifier.weight(1f)) {
-            Text(
-                item.title,
-                color = TextPrimary,
-                fontSize = 15.sp,
-                fontWeight = FontWeight.SemiBold
-            )
-            Spacer(Modifier.height(2.dp))
-            Text(item.subtitle, color = TextSecondary, fontSize = 12.sp)
-        }
-        Text("›", color = TextSecondary, fontSize = 22.sp, fontWeight = FontWeight.Light)
     }
 }
 
@@ -527,15 +597,18 @@ private fun buildProfileData(
             listOf(
                 ProfileMenuItem(
                     R.drawable.habits, "Edit Profile",
-                    "Update your name, photo and bio", actions.onEditProfile
+                    "Update your name, photo and bio",
+                    onClick = actions.onEditProfile
                 ),
                 ProfileMenuItem(
                     R.drawable.stopwatch, "My Goals",
-                    "Set and track your personal goals", actions.onGoals
+                    "Set and track your personal goals",
+                    onClick = actions.onGoals
                 ),
                 ProfileMenuItem(
                     R.drawable.barchart, "Progress & Stats",
-                    "View your focus, habits and growth", actions.onProgress
+                    "View your focus, habits and growth",
+                    onClick = actions.onProgress
                 )
             )
         ),
@@ -544,23 +617,29 @@ private fun buildProfileData(
             listOf(
                 ProfileMenuItem(
                     R.drawable.concentrate, "Focus Settings",
-                    "Timer, break time and notifications", actions.onFocusSettings
+                    "Timer, break time and notifications",
+                    onClick = actions.onFocusSettings
                 ),
                 ProfileMenuItem(
                     R.drawable.home, "Themes",
-                    "Light, Dark, System", actions.onThemes
+                    ThemeManager.active.name,   // 👈 live subtitle: current theme name
+                    showsThemeDropdown = true,  // 👈 opens dropdown instead of navigating
+                    onClick = actions.onThemes  // (unused while dropdown is open)
                 ),
                 ProfileMenuItem(
                     R.drawable.user, "Notifications",
-                    "Session reminders and alerts", actions.onNotifications
+                    "Session reminders and alerts",
+                    onClick = actions.onNotifications
                 ),
                 ProfileMenuItem(
                     R.drawable.habits, "App Blocking",
-                    "Manage blocked apps", actions.onAppBlocking
+                    "Manage blocked apps",
+                    onClick = actions.onAppBlocking
                 ),
                 ProfileMenuItem(
                     R.drawable.leaf1, "Sound & White Noise",
-                    "Ambient sounds for better focus", actions.onSound
+                    "Ambient sounds for better focus",
+                    onClick = actions.onSound
                 )
             )
         ),
@@ -569,11 +648,13 @@ private fun buildProfileData(
             listOf(
                 ProfileMenuItem(
                     R.drawable.concentrate, "Help & Feedback",
-                    "Get help or share your feedback", actions.onHelp
+                    "Get help or share your feedback",
+                    onClick = actions.onHelp
                 ),
                 ProfileMenuItem(
                     R.drawable.habits, "About",
-                    "Version 1.0.0", actions.onAbout
+                    "Version 1.0.0",
+                    onClick = actions.onAbout
                 )
             )
         )
@@ -584,7 +665,7 @@ private fun buildProfileData(
 // PREVIEW
 // =====================================================================
 
-@Preview(showBackground = true, backgroundColor = 0xFF0E0E10, widthDp = 390, heightDp = 900)
+@Preview(showBackground = true, backgroundColor = 0xFF101814, widthDp = 390, heightDp = 900)
 @Composable
 private fun ProfileScreenPreview() {
     ProfileScreen(
@@ -595,7 +676,7 @@ private fun ProfileScreenPreview() {
             avatarPath = null,
             stats = ProfileStats(
                 focusSessions = 7,
-                totalFocusMinutes = 270, // shows as "4h 30m"
+                totalFocusMinutes = 270,
                 habitsTracked = 12,
                 treesGrown = 3
             ),

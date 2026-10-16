@@ -71,9 +71,12 @@ import androidx.core.view.WindowCompat
 import com.example.disipline.UI.DisiplineApp
 import com.example.disipline.data.reposotry.ProfileRepository
 import com.example.disipline.ui.theme.DisciplineXTheme
+import com.example.disipline.ui.theme.ThemeManager
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
+        ThemeManager.initialize(applicationContext)
+
         super.onCreate(savedInstanceState)
         ProfileRepository.init(applicationContext)
 

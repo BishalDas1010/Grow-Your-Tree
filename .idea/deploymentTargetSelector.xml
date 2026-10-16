@@ -4,7 +4,7 @@
     <selectionStates>
       <SelectionState runConfigName="app">
         <option name="selectionMode" value="DROPDOWN" />
-        <DropdownSelection timestamp="2026-10-15T06:56:14.495003480Z">
+        <DropdownSelection timestamp="2026-10-16T06:27:20.089214720Z">
           <Target type="DEFAULT_BOOT">
             <handle>
               <DeviceId pluginId="LocalEmulator" identifier="path=/home/vishal/.android/avd/Pixel_10_Pro.avd" />
@@ -25,17 +25,6 @@
         <DialogSelection />
       </SelectionState>
       <SelectionState runConfigName="MainActivity (1)">
-        <option name="selectionMode" value="DROPDOWN" />
-        <DropdownSelection timestamp="2026-10-14T07:55:15.562968242Z">
-          <Target type="DEFAULT_BOOT">
-            <handle>
-              <DeviceId pluginId="LocalEmulator" identifier="path=/home/vishal/.android/avd/Pixel_10_Pro.avd" />
-            </handle>
-          </Target>
-        </DropdownSelection>
-        <DialogSelection />
-      </SelectionState>
-      <SelectionState runConfigName="FocusTimerScreenPausedPreview">
         <option name="selectionMode" value="DROPDOWN" />
         <DropdownSelection timestamp="2026-10-14T07:55:15.562968242Z">
           <Target type="DEFAULT_BOOT">
@@ -71,6 +60,17 @@
       <SelectionState runConfigName="ProfileScreenPreview">
         <option name="selectionMode" value="DROPDOWN" />
         <DropdownSelection timestamp="2026-10-14T17:34:16.343292444Z">
+          <Target type="DEFAULT_BOOT">
+            <handle>
+              <DeviceId pluginId="LocalEmulator" identifier="path=/home/vishal/.android/avd/Pixel_10_Pro.avd" />
+            </handle>
+          </Target>
+        </DropdownSelection>
+        <DialogSelection />
+      </SelectionState>
+      <SelectionState runConfigName="ThemeScreenPreview">
+        <option name="selectionMode" value="DROPDOWN" />
+        <DropdownSelection timestamp="2026-10-16T05:57:12.379868621Z">
           <Target type="DEFAULT_BOOT">
             <handle>
               <DeviceId pluginId="LocalEmulator" identifier="path=/home/vishal/.android/avd/Pixel_10_Pro.avd" />
