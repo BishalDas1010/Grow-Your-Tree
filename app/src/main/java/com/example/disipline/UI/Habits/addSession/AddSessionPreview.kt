@@ -43,6 +43,7 @@ import com.example.disipline.Viewmodel.AddSessionUiState
 import com.example.disipline.Viewmodel.AddSessionViewModel
 import com.example.disipline.Viewmodel.formatDate
 import com.example.disipline.ui.theme.Accent
+import com.example.disipline.ui.theme.AppColors
 import com.example.disipline.ui.theme.BgDark
 import com.example.disipline.ui.theme.Outline
 import com.example.disipline.ui.theme.Surface
@@ -229,7 +230,7 @@ fun AddSessionContent(
                 if (!state.timeOk) {
                     Text(
                         text = "End time must be after start time",
-                        color = Color(0xFFFF6B6B),
+                        color = AppColors.Error,
                         fontSize = 12.sp
                     )
                 }

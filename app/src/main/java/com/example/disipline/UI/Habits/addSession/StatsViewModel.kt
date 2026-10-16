@@ -116,13 +116,18 @@ private fun List<Session>.toPageData(period: StatsPeriod): StatsPageData {
 
     return StatsPageData(
         dateRange = formatRange(period),
-        totalFocusTime = formatDuration(totalMinutes),
+        totalMinutes = totalMinutes,
+        totalTrend = null,
         bars = bucketIntoBars(done, period),
         tiles = listOf(
-            StatTileData("Focus Sessions", count.toString()),
-            StatTileData("Avg. Session", "$avg min"),
-            StatTileData("Completed Goals", goalsDone.toString()),
-            StatTileData("Current Streak", "$streak days", emoji = "🔥")
+            StatTileData("Focus Sessions", count),
+            StatTileData("Avg. Session", avg, suffix = " min"),
+            StatTileData("Completed Goals", goalsDone),
+            StatTileData(
+                "Current Streak", streak,
+                suffix = if (streak == 1) " day" else " days",
+                emoji = "🔥"
+            )
         )
     )
 }

@@ -182,6 +182,10 @@ object HabitRepository {
         scope.launch { dao.toggleSession(sessionId) }
     }
 
+    fun completeSession(sessionId: Int, endTime: String) {
+        scope.launch { dao.completeSession(sessionId, endTime) }
+    }
+
     fun deleteSession(habitId: Int, sessionId: Int) {
         scope.launch { dao.deleteSession(sessionId) }
     }

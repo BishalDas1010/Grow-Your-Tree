@@ -45,6 +45,9 @@ abstract class HabitDao {
     @Query("UPDATE sessions SET isDone = NOT isDone WHERE id = :sessionId")
     abstract suspend fun toggleSession(sessionId: Int)
 
+    @Query("UPDATE sessions SET isDone = 1, endTime = :endTime WHERE id = :sessionId")
+    abstract suspend fun completeSession(sessionId: Int, endTime: String)
+
     @Query("DELETE FROM sessions WHERE id = :sessionId")
     abstract suspend fun deleteSession(sessionId: Int)
 

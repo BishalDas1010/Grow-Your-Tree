@@ -1,58 +1,54 @@
 package com.example.disipline.ui.theme
 
-import android.app.Activity
-import android.os.Build
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.dynamicDarkColorScheme
-import androidx.compose.material3.dynamicLightColorScheme
-import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.platform.LocalContext
 
-private val DarkColorScheme = darkColorScheme(
-    primary = Purple80,
-    secondary = PurpleGrey80,
-    tertiary = Pink80
+private val DisciplineColorScheme = darkColorScheme(
+    primary = AppColors.PrimaryAccent,
+    onPrimary = AppColors.ButtonText,
+    primaryContainer = AppColors.PrimaryButton,
+    onPrimaryContainer = AppColors.ButtonText,
+    secondary = AppColors.PrimaryAccent,
+    onSecondary = AppColors.ButtonText,
+    secondaryContainer = AppColors.ElevatedSurface,
+    onSecondaryContainer = AppColors.PrimaryText,
+    tertiary = AppColors.IconBackground,
+    onTertiary = AppColors.PrimaryText,
+    background = AppColors.Background,
+    onBackground = AppColors.PrimaryText,
+    surface = AppColors.Surface,
+    onSurface = AppColors.PrimaryText,
+    surfaceVariant = AppColors.ElevatedSurface,
+    onSurfaceVariant = AppColors.SecondaryText,
+    outline = AppColors.Outline,
+    outlineVariant = AppColors.IconBackground,
+    error = AppColors.Error,
+    onError = AppColors.Background
 )
 
-private val LightColorScheme = lightColorScheme(
-    primary = Purple40,
-    secondary = PurpleGrey40,
-    tertiary = Pink40
-
-    /* Other default colors to override
-    background = Color(0xFFFFFBFE),
-    surface = Color(0xFFFFFBFE),
-    onPrimary = Color.White,
-    onSecondary = Color.White,
-    onTertiary = Color.White,
-    onBackground = Color(0xFF1C1B1F),
-    onSurface = Color(0xFF1C1B1F),
-    */
-)
-
+/**
+ * DisciplineX centralized Material 3 theme.
+ */
 @Composable
-fun DisiplineTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
-    // Dynamic color is available on Android 12+
-    dynamicColor: Boolean = true,
+fun DisciplineXTheme(
     content: @Composable () -> Unit
 ) {
-    val colorScheme = when {
-        dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
-            val context = LocalContext.current
-            if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
-        }
-
-        darkTheme -> DarkColorScheme
-        else -> LightColorScheme
-    }
-
     MaterialTheme(
-        colorScheme = colorScheme,
+        colorScheme = DisciplineColorScheme,
         typography = Typography,
         content = content
     )
+}
+
+/**
+ * Alias for backward compatibility across existing views.
+ */
+@Composable
+fun DisiplineTheme(
+    darkTheme: Boolean = true,
+    dynamicColor: Boolean = false,
+    content: @Composable () -> Unit
+) {
+    DisciplineXTheme(content = content)
 }

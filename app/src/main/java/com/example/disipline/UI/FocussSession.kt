@@ -80,6 +80,7 @@ import com.example.disipline.blocker.BlockedApp
 import com.example.disipline.blocker.loadSelectedApps
 import com.example.disipline.data.Session
 import com.example.disipline.ui.theme.Accent
+import com.example.disipline.ui.theme.AppColors
 import com.example.disipline.ui.theme.BgDark
 import com.example.disipline.ui.theme.IconCircle
 import com.example.disipline.ui.theme.OnAccent
@@ -140,7 +141,7 @@ private const val LONG_BREAK_MINUTES = 15
 private const val MIN_FOCUS_CHUNK = 5      // every focus piece is at least this long
 
 // Colour of the break pieces in the plan bar
-private val BreakColor = Color(0xFFFFB74D)
+private val BreakColor get() = AppColors.Warning
 
 // Splits the session into focus pieces and breaks. The breaks are INSIDE the
 // total time. Example: 30 min + Short Break -> Focus 7, Break 5, Focus 7, Break 5, Focus 6.

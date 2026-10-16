@@ -67,6 +67,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.disipline.R
 import kotlin.math.PI
+import com.example.disipline.ui.theme.AppColors
 import kotlin.math.cos
 import kotlin.math.min
 import kotlin.math.roundToInt
@@ -76,16 +77,16 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 // ---------- Colors ----------
-private val BgTop = Color(0xFF0E2A22)
-private val BgBottom = Color(0xFF071612)
-private val CardBorder = Color(0xFF1F4A3B)
-private val StatsBg = Color(0xFF0F2A22)
-private val StatsDivider = Color(0xFF1E3D33)
-private val Mint = Color(0xFF6BF0A0)
-private val MintDark = Color(0xFF06261A)
-private val Gold = Color(0xFFFFC83D)
-private val SubText = Color(0xFFB8CFC6)
-private val LabelText = Color(0xFF8FA89E)
+private val BgTop get() = AppColors.Background
+private val BgBottom get() = AppColors.Background
+private val CardBorder get() = AppColors.Outline
+private val StatsBg get() = AppColors.Surface
+private val StatsDivider get() = AppColors.Outline
+private val Mint get() = AppColors.PrimaryAccent
+private val MintDark get() = AppColors.ButtonText
+private val Gold get() = AppColors.Warning
+private val SubText get() = AppColors.SecondaryText
+private val LabelText get() = AppColors.SecondaryText
 
 // ---------- Animation state ----------
 private class CompletionAnim {

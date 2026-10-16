@@ -27,6 +27,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.disipline.ui.theme.Accent
+import com.example.disipline.ui.theme.AppColors
 import com.example.disipline.ui.theme.BgDark
 import com.example.disipline.ui.theme.OnAccent
 import com.example.disipline.ui.theme.TextPrimary
@@ -125,7 +126,7 @@ fun OnboardingScreen(onFinish: () -> Unit) {
                         modifier = Modifier
                             .size(220.dp)
                             .clip(CircleShape)
-                            .background(Color.White.copy(alpha = 0.04f)),
+                            .background(AppColors.IconBackground),
                         contentAlignment = Alignment.Center
                     ) {
                         Text(text = page.emoji, fontSize = 130.sp)

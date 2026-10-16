@@ -59,9 +59,11 @@ import com.example.disipline.ui.theme.Surface
 import com.example.disipline.ui.theme.TextPrimary
 import com.example.disipline.ui.theme.TextSecondary
 
+import com.example.disipline.ui.theme.AppColors
+
 // SCREEN 2 - HABIT DETAIL
 
-private val DeleteRed = Color(0xFFE57373)
+private val DeleteRed get() = AppColors.Error
 
 @Composable
 fun TimeField(label: String, minutes: Int, onPicked: (Int) -> Unit) {

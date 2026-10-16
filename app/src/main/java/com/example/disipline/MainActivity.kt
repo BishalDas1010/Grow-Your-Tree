@@ -69,8 +69,8 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.core.view.WindowCompat
 import com.example.disipline.UI.DisiplineApp
-import com.example.disipline.UI.profile.ProfileNavHost
 import com.example.disipline.data.reposotry.ProfileRepository
+import com.example.disipline.ui.theme.DisciplineXTheme
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -90,9 +90,9 @@ class MainActivity : ComponentActivity() {
             .isAppearanceLightNavigationBars = false
 
         setContent {
-            DisiplineApp()
-
-
+            DisciplineXTheme {
+                DisiplineApp()
+            }
         }
     }
 }

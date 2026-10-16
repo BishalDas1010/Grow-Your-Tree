@@ -49,6 +49,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.disipline.R
 import com.example.disipline.ui.theme.Accent
+import com.example.disipline.ui.theme.AppColors
 import com.example.disipline.ui.theme.BgDark
 import com.example.disipline.ui.theme.OnAccent
 import com.example.disipline.ui.theme.Outline
@@ -273,7 +274,7 @@ private fun ProfileCard(data: ProfileData, onAvatarClick: () -> Unit) {
                 .fillMaxWidth()
                 .height(220.dp)
                 .background(
-                    Brush.verticalGradient(listOf(Color(0xCC0E1F17), Color(0x99000000)))
+                    Brush.verticalGradient(listOf(AppColors.ElevatedSurface.copy(alpha = 0.8f), AppColors.Background.copy(alpha = 0.6f)))
                 )
         )
         Column(

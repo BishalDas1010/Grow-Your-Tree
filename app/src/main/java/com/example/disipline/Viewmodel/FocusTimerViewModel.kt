@@ -471,6 +471,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.util.Locale
 
 class FocusTimerViewModel : ViewModel() {
 
@@ -491,6 +492,7 @@ class FocusTimerViewModel : ViewModel() {
     // The session this timer belongs to (null when started without a session).
     private var habitId: Int? = null
     private var sessionId: Int? = null
+    private var currentSettings: FocusSettings? = null
 
     fun start(
         settings: FocusSettings,
@@ -499,6 +501,7 @@ class FocusTimerViewModel : ViewModel() {
     ) {
         this.habitId = habitId
         this.sessionId = sessionId
+        this.currentSettings = settings
 
         // Block only the apps ticked on the Focus screen
         BlockerState.blockedPackages =
@@ -536,6 +539,7 @@ class FocusTimerViewModel : ViewModel() {
         }
         habitId = null
         sessionId = null
+        currentSettings = null
     }
 
     private fun startTicking() {
@@ -559,6 +563,7 @@ class FocusTimerViewModel : ViewModel() {
     /**
      * One-way "mark done". Only toggles if the session isn't already isDone,
      * so completing the same session twice never un-checks it.
+     * Updates the endTime in the database based on the actual focus minutes completed.
      */
     private fun markSessionDone() {
         val h = habitId ?: return
@@ -569,8 +574,39 @@ class FocusTimerViewModel : ViewModel() {
             ?.sessions?.firstOrNull { it.id == s }
 
         if (session != null && !session.isDone) {
-            HabitRepository.toggleSession(h, s)
+            val actualMins = currentSettings?.minutes ?: 25
+            val newEndTime = calculateEndTime(session.startTime, actualMins)
+            HabitRepository.completeSession(s, newEndTime)
         }
+    }
+
+    private fun calculateEndTime(startTime: String, durationMinutes: Int): String {
+        val startMins = parseTime(startTime) ?: return startTime
+        val endMins = (startMins + durationMinutes) % (24 * 60)
+        return formatTimeFromMinutes(endMins)
+    }
+
+    private fun parseTime(text: String): Int? {
+        val parts = text.trim().split(" ")
+        if (parts.size != 2) return null
+        val hm = parts[0].split(":")
+        if (hm.size != 2) return null
+        val hour = hm[0].toIntOrNull() ?: return null
+        val minute = hm[1].toIntOrNull() ?: return null
+        val isPm = parts[1].equals("PM", ignoreCase = true)
+        return ((hour % 12) + if (isPm) 12 else 0) * 60 + minute
+    }
+
+    private fun formatTimeFromMinutes(minutesSinceMidnight: Int): String {
+        val hours24 = (minutesSinceMidnight / 60) % 24
+        val mins = minutesSinceMidnight % 60
+        val isPm = hours24 >= 12
+        val hours12 = when (val h = hours24 % 12) {
+            0 -> 12
+            else -> h
+        }
+        val amPm = if (isPm) "PM" else "AM"
+        return String.format(Locale.US, "%02d:%02d %s", hours12, mins, amPm)
     }
 
     override fun onCleared() {

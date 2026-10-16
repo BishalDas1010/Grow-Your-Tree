@@ -42,6 +42,7 @@ import com.example.disipline.R
 import com.example.disipline.TreeDesign
 import com.example.disipline.data.HomeUiState
 import com.example.disipline.ui.theme.Accent
+import com.example.disipline.ui.theme.AppColors
 import com.example.disipline.ui.theme.BgDark
 import com.example.disipline.ui.theme.IconCircle
 import com.example.disipline.ui.theme.OnAccent
@@ -74,7 +75,7 @@ private val ICON_ARROW = R.drawable.ic_launcher_foreground
 private val ICON_CHECK = R.drawable.ic_launcher_foreground
 private val ICON_PLAY = R.drawable.ic_launcher_foreground
 
-private val BadgeRed = Color(0xFFE5484D)
+private val BadgeRed get() = AppColors.Error
 
 @Composable
 fun HomeScreen(
