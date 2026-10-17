@@ -5,25 +5,29 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.disipline.UI.Goal
 import com.example.disipline.UI.Habits.habit_screen.Habit
-import com.example.disipline.data.HomeUiState
+import com.example.disipline.data.Local.profile.ProfileEntity
 import com.example.disipline.data.reposotry.HabitRepository
+import com.example.disipline.data.reposotry.ProfileRepository
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 
 class HomeViewModel : ViewModel() {
 
-    // Rebuilt every time the habits change (add, tick, delete).
-    val uiState: StateFlow<HomeUiState> = HabitRepository.habits
-        .map { habits -> buildState(habits) }
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5_000),
-            initialValue = buildState(HabitRepository.habits.value)
-        )
+    // Rebuilt every time habits or profile changes.
+    val uiState: StateFlow<HomeUiState> = combine(
+        HabitRepository.habits,
+        ProfileRepository.profile
+    ) { habits, profile ->
+        buildState(habits, profile)
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5_000),
+        initialValue = buildState(HabitRepository.habits.value, ProfileRepository.profile.value)
+    )
 
-    private fun buildState(habits: List<Habit>): HomeUiState {
+    private fun buildState(habits: List<Habit>, profile: ProfileEntity?): HomeUiState {
         val doneSessions = habits.flatMap { it.sessions }.filter { it.isDone }
 
         val doneMinutes = doneSessions.sumOf { session ->
@@ -32,9 +36,12 @@ class HomeViewModel : ViewModel() {
             if (start != null && end != null && end > start) end - start else 0
         }
 
+        val userName = profile?.name?.takeIf { it.isNotBlank() } ?: "Alex"
+        val quote = profile?.quote?.takeIf { it.isNotBlank() } ?: DEFAULT_QUOTE
+
         return HomeUiState(
-            userName = USER_NAME,
-            quote = QUOTE,
+            userName = userName,
+            quote = quote,
             focusSessions = doneSessions.size,
             focusTime = formatDuration(doneMinutes),
             treesGrown = doneSessions.size,   // one tree per completed session
@@ -62,7 +69,6 @@ class HomeViewModel : ViewModel() {
     }
 
     private companion object {
-        const val USER_NAME = "Alex"   // change to the real user name later
-        const val QUOTE = "\"Discipline today creates the life you want tomorrow.\""
+        const val DEFAULT_QUOTE = "\"Discipline today creates the life you want tomorrow.\""
     }
 }

@@ -1,5 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- Your main theme -->
+    <style name="Theme.DisiplineX" parent="android:Theme.Material.Light.NoActionBar">
+        <!-- ... -->
+    </style>
 
-    <style name="Theme.Disipline" parent="android:Theme.Material.Light.NoActionBar" />
+    <!-- The system splash theme -->
+    <style name="Theme.DisiplineX.Starting" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/splash_background</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/leaf1</item> <!-- Use your actual leaf icon -->
+        <item name="postSplashScreenTheme">@style/Theme.DisiplineX</item>
+    </style>
 </resources>

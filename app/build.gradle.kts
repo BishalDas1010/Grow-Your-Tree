@@ -68,4 +68,8 @@ dependencies {
     ksp(libs.androidx.room.compiler)
 
     implementation(libs.androidx.datastore.preferences)
+
+
+    implementation("androidx.core:core-splashscreen:1.0.1")
+
 }

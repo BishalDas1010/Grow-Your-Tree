@@ -134,18 +134,18 @@ fun HomeScreen(
             }
 
             // Quick Actions Section
-            item {
-                Text(
-                    text = "Quick Actions",
-                    color = TextPrimary,
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(top = 8.dp)
-                )
-            }
-            item {
-                QuickActionsRow()
-            }
+//            item {
+//                Text(
+//                    text = "Quick Actions",
+//                    color = TextPrimary,
+//                    fontSize = 18.sp,
+//                    fontWeight = FontWeight.Bold,
+//                    modifier = Modifier.padding(top = 8.dp)
+//                )
+//            }
+//            item {
+//                QuickActionsRow()
+//            }
 
 
         }
@@ -248,15 +248,15 @@ private fun StatsRow(focusSessions: Int, focusTime: String, treesGrown: Int) {
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        StatCard(emoji = "⏱️", value = "$focusSessions", label = "Focus Sessions", modifier = Modifier.weight(1f))
-        StatCard(emoji = "📊", value = focusTime, label = "Focus Time", modifier = Modifier.weight(1f))
-        StatCard(emoji = "🌱", value = "$treesGrown", label = "Trees Grown", modifier = Modifier.weight(1f))
+        StatCard(emoji = R.drawable.focussplish, value = "$focusSessions", label = "Focus Sessions", modifier = Modifier.weight(1f))
+        StatCard(emoji = R.drawable.stopwatch, value = focusTime, label = "Focus Time", modifier = Modifier.weight(1f))
+        StatCard(emoji = R.drawable.leaf, value = "$treesGrown", label = "Trees Grown", modifier = Modifier.weight(1f))
     }
 }
 
 @Composable
 private fun StatCard(
-    emoji: String,
+    emoji: Int,
     value: String,
     label: String,
     modifier: Modifier = Modifier
@@ -275,7 +275,7 @@ private fun StatCard(
                 .background(IconCircle),
             contentAlignment = Alignment.Center
         ) {
-            Text(text = emoji, fontSize = 18.sp)
+            Icon(painterResource(emoji), contentDescription = "")
         }
 
         Spacer(Modifier.height(8.dp))
@@ -393,51 +393,52 @@ private fun QuickActionsRow() {
         // PROBLEM 1 FIXED: parameter is named `icon`, not `emoji`.
         // We're passing a Painter (from painterResource), so the call
         // must match the function signature — no `emoji =` keyword here.
-        QuickActionItem(icon = painterResource(R.drawable.target), label = "Focus Mode")
-        QuickActionItem(icon = painterResource(R.drawable.googledocs), label = "Add Habit")
-        QuickActionItem(icon = painterResource(R.drawable.spreadsheetapp),   label = "View Stats")
-        QuickActionItem(icon = painterResource(R.drawable.leaf1),      label = "Plant Tree")
+//        QuickActionItem(icon = painterResource(R.drawable.target), label = "Focus Mode")
+//        QuickActionItem(icon = painterResource(R.drawable.googledocs), label = "Add Habit")
+//        QuickActionItem(icon = painterResource(R.drawable.spreadsheetapp),   label = "View Stats")
+//        QuickActionItem(icon = painterResource(R.drawable.leaf1),      label = "Plant Tree")
+//    }
     }
 }
 
-@Composable
-private fun QuickActionItem(
-    icon: Painter,      // PROBLEM 2: this is a Painter, not an emoji String.
-    // If you ever want text emojis, rename this param
-    // to `emoji: String` and use Text instead of Image.
-    label: String
-) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Box(
-            modifier = Modifier
-                .size(56.dp)
-                .clip(RoundedCornerShape(16.dp))
-                .background(Surface),
-            contentAlignment = Alignment.Center
-        ) {
-            Image(
-                painter = icon,
-                contentDescription = label,
-                modifier = Modifier.size(28.dp),
-                // PROBLEM 3: without contentScale, non-square or oversized
-                // PNGs can stretch. Fit keeps aspect ratio inside the 28dp box.
-                contentScale = ContentScale.Fit
-            )
-        }
-
-        Spacer(modifier = Modifier.height(6.dp))
-
-        Text(
-            text = label,
-            color = TextSecondary,
-            fontSize = 11.sp,
-            maxLines = 1,
-            textAlign = TextAlign.Center // long labels center nicely
-        )
-    }
-}
+//@Composable
+//private fun QuickActionItem(
+//    icon: Painter,      // PROBLEM 2: this is a Painter, not an emoji String.
+//    // If you ever want text emojis, rename this param
+//    // to `emoji: String` and use Text instead of Image.
+//    label: String
+//) {
+//    Column(
+//        horizontalAlignment = Alignment.CenterHorizontally
+//    ) {
+//        Box(
+//            modifier = Modifier
+//                .size(56.dp)
+//                .clip(RoundedCornerShape(16.dp))
+//                .background(Surface),
+//            contentAlignment = Alignment.Center
+//        ) {
+//            Image(
+//                painter = icon,
+//                contentDescription = label,
+//                modifier = Modifier.size(28.dp),
+//                // PROBLEM 3: without contentScale, non-square or oversized
+//                // PNGs can stretch. Fit keeps aspect ratio inside the 28dp box.
+//                contentScale = ContentScale.Fit
+//            )
+//        }
+//
+//        Spacer(modifier = Modifier.height(6.dp))
+//
+//        Text(
+//            text = label,
+//            color = TextSecondary,
+//            fontSize = 11.sp,
+//            maxLines = 1,
+//            textAlign = TextAlign.Center // long labels center nicely
+//        )
+//    }
+//}
 
 
 // =====================================================================

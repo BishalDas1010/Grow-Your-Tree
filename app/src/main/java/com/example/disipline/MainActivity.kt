@@ -67,6 +67,7 @@ import com.example.disipline.data.reposotry.HabitRepository
 
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.core.view.WindowCompat
 import com.example.disipline.UI.DisiplineApp
 import com.example.disipline.data.reposotry.ProfileRepository
@@ -76,7 +77,7 @@ import com.example.disipline.ui.theme.ThemeManager
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         ThemeManager.initialize(applicationContext)
-
+        installSplashScreen()
         super.onCreate(savedInstanceState)
         ProfileRepository.init(applicationContext)
 
